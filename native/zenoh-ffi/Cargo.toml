@@ -1,0 +1,25 @@
+[package]
+name = "zenoh_ffi"
+version = "0.1.0"
+edition = "2021"
+authors = ["konnta0"]
+license = "MIT"
+description = "Zenoh C FFI bindings for C#"
+
+[lib]
+crate-type = ["cdylib"]
+name = "zenoh_ffi"
+
+[dependencies]
+# zenoh = "0.11"  # TODO: Add after zenoh-c submodule is set up
+libc = "0.2"
+
+[build-dependencies]
+csbindgen = "1.9"
+cmake = "0.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
