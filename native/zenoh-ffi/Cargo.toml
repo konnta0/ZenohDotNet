@@ -11,8 +11,11 @@ crate-type = ["cdylib"]
 name = "zenoh_ffi"
 
 [dependencies]
-# zenoh = "0.11"  # TODO: Add after zenoh-c submodule is set up
+zenoh = { version = "1.0.3", features = ["unstable"] }
+tokio = { version = "1.41", features = ["full"] }
+serde_json = "1.0"
 libc = "0.2"
+once_cell = "1.19"
 
 [build-dependencies]
 csbindgen = "1.9"

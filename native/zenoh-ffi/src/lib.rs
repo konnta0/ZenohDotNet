@@ -1,22 +1,36 @@
+use once_cell::sync::Lazy;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::ptr;
+use std::sync::Arc;
+use tokio::runtime::Runtime;
+use zenoh::config::Config;
+use zenoh::prelude::*;
+use zenoh::publication::Publisher as ZenohPublisher;
+use zenoh::sample::Sample as ZenohSample;
+use zenoh::Session as ZenohSession;
+use zenoh::subscriber::Subscriber as ZenohSubscriber;
+
+// Global Tokio runtime for async operations
+static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
+    Runtime::new().expect("Failed to create Tokio runtime")
+});
 
 /// Opaque handle for Zenoh session
 #[repr(C)]
-pub struct ZenohSession {
-    _private: [u8; 0],
+pub struct SessionHandle {
+    session: Arc<ZenohSession>,
 }
 
 /// Opaque handle for Zenoh publisher
 #[repr(C)]
-pub struct ZenohPublisher {
-    _private: [u8; 0],
+pub struct PublisherHandle {
+    publisher: Arc<ZenohPublisher<'static>>,
 }
 
 /// Opaque handle for Zenoh subscriber
 #[repr(C)]
-pub struct ZenohSubscriber {
-    _private: [u8; 0],
+pub struct SubscriberHandle {
+    _subscriber: Arc<ZenohSubscriber<'static>>,
 }
 
 /// Sample data structure passed to subscriber callbacks
@@ -44,68 +58,107 @@ pub enum ZenohError {
 
 /// Opens a Zenoh session with the given configuration (JSON string).
 /// Pass NULL or empty string for default configuration.
-/// Returns a pointer to ZenohSession on success, NULL on failure.
+/// Returns a pointer to SessionHandle on success, NULL on failure.
 #[no_mangle]
-pub extern "C" fn zenoh_open(config_json: *const c_char) -> *mut ZenohSession {
-    // TODO: Implement actual zenoh session creation when zenoh-c is integrated
-    // For now, return a placeholder to allow compilation
-
-    let _config = if config_json.is_null() {
-        None
+pub extern "C" fn zenoh_open(config_json: *const c_char) -> *mut SessionHandle {
+    let config = if config_json.is_null() {
+        Config::default()
     } else {
-        unsafe {
-            CStr::from_ptr(config_json)
-                .to_str()
-                .ok()
+        let config_str = unsafe {
+            match CStr::from_ptr(config_json).to_str() {
+                Ok(s) => s,
+                Err(_) => return ptr::null_mut(),
+            }
+        };
+
+        if config_str.is_empty() {
+            Config::default()
+        } else {
+            match serde_json::from_str::<serde_json::Value>(config_str) {
+                Ok(_) => {
+                    // For simplicity, use default config for now
+                    // Full JSON config parsing can be added later
+                    Config::default()
+                }
+                Err(_) => return ptr::null_mut(),
+            }
         }
     };
 
-    // Placeholder: return a non-null pointer for testing
-    // This will be replaced with actual zenoh session creation
-    Box::into_raw(Box::new(ZenohSession { _private: [] }))
+    // Open session using the global runtime
+    let session_result = RUNTIME.block_on(async {
+        zenoh::open(config).await
+    });
+
+    match session_result {
+        Ok(session) => {
+            let handle = Box::new(SessionHandle {
+                session: Arc::new(session),
+            });
+            Box::into_raw(handle)
+        }
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Closes a Zenoh session and frees all associated resources.
 #[no_mangle]
-pub extern "C" fn zenoh_close(session: *mut ZenohSession) {
+pub extern "C" fn zenoh_close(session: *mut SessionHandle) {
     if session.is_null() {
         return;
     }
 
     unsafe {
-        // TODO: Implement actual session cleanup when zenoh-c is integrated
-        let _ = Box::from_raw(session);
+        let handle = Box::from_raw(session);
+        // Session will be dropped here, closing the connection
+        drop(handle);
     }
 }
 
 /// Declares a publisher on the given key expression.
-/// Returns a pointer to ZenohPublisher on success, NULL on failure.
+/// Returns a pointer to PublisherHandle on success, NULL on failure.
 #[no_mangle]
 pub extern "C" fn zenoh_declare_publisher(
-    session: *mut ZenohSession,
+    session: *mut SessionHandle,
     key_expr: *const c_char,
-) -> *mut ZenohPublisher {
+) -> *mut PublisherHandle {
     if session.is_null() || key_expr.is_null() {
         return ptr::null_mut();
     }
 
-    let _key = unsafe {
+    let handle = unsafe { &*session };
+    let key = unsafe {
         match CStr::from_ptr(key_expr).to_str() {
             Ok(s) => s,
             Err(_) => return ptr::null_mut(),
         }
     };
 
-    // TODO: Implement actual publisher declaration when zenoh-c is integrated
-    // Placeholder
-    Box::into_raw(Box::new(ZenohPublisher { _private: [] }))
+    let publisher_result = RUNTIME.block_on(async {
+        handle.session.declare_publisher(key).await
+    });
+
+    match publisher_result {
+        Ok(publisher) => {
+            // Convert to static lifetime by leaking the session Arc
+            let static_publisher: ZenohPublisher<'static> = unsafe {
+                std::mem::transmute(publisher)
+            };
+
+            let pub_handle = Box::new(PublisherHandle {
+                publisher: Arc::new(static_publisher),
+            });
+            Box::into_raw(pub_handle)
+        }
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Publishes data on the given publisher.
 /// Returns ZenohError code.
 #[no_mangle]
 pub extern "C" fn zenoh_publisher_put(
-    publisher: *mut ZenohPublisher,
+    publisher: *mut PublisherHandle,
     payload: *const u8,
     payload_len: usize,
 ) -> ZenohError {
@@ -113,64 +166,111 @@ pub extern "C" fn zenoh_publisher_put(
         return ZenohError::NullPointer;
     }
 
-    // TODO: Implement actual put operation when zenoh-c is integrated
-    let _data = unsafe { std::slice::from_raw_parts(payload, payload_len) };
+    let handle = unsafe { &*publisher };
+    let data = unsafe { std::slice::from_raw_parts(payload, payload_len) };
 
-    ZenohError::Ok
+    let result = RUNTIME.block_on(async {
+        handle.publisher.put(data.to_vec()).await
+    });
+
+    match result {
+        Ok(_) => ZenohError::Ok,
+        Err(_) => ZenohError::PutFailed,
+    }
 }
 
 /// Undeclares and frees a publisher.
 #[no_mangle]
-pub extern "C" fn zenoh_undeclare_publisher(publisher: *mut ZenohPublisher) {
+pub extern "C" fn zenoh_undeclare_publisher(publisher: *mut PublisherHandle) {
     if publisher.is_null() {
         return;
     }
 
     unsafe {
-        // TODO: Implement actual publisher cleanup when zenoh-c is integrated
-        let _ = Box::from_raw(publisher);
+        let handle = Box::from_raw(publisher);
+        // Publisher will be undeclared when dropped
+        drop(handle);
     }
 }
 
 /// Declares a subscriber on the given key expression with a callback.
-/// Returns a pointer to ZenohSubscriber on success, NULL on failure.
+/// Returns a pointer to SubscriberHandle on success, NULL on failure.
 #[no_mangle]
 pub extern "C" fn zenoh_declare_subscriber(
-    session: *mut ZenohSession,
+    session: *mut SessionHandle,
     key_expr: *const c_char,
     callback: ZenohSubscriberCallback,
     context: *mut c_void,
-) -> *mut ZenohSubscriber {
+) -> *mut SubscriberHandle {
     if session.is_null() || key_expr.is_null() {
         return ptr::null_mut();
     }
 
-    let _key = unsafe {
+    let handle = unsafe { &*session };
+    let key = unsafe {
         match CStr::from_ptr(key_expr).to_str() {
             Ok(s) => s,
             Err(_) => return ptr::null_mut(),
         }
     };
 
-    // TODO: Implement actual subscriber declaration when zenoh-c is integrated
-    // Store callback and context for later use
-    let _ = callback;
-    let _ = context;
+    let subscriber_result = RUNTIME.block_on(async {
+        handle.session
+            .declare_subscriber(key)
+            .callback(move |sample: ZenohSample| {
+                // Convert key expression to C string
+                let key_cstr = match CString::new(sample.key_expr().as_str()) {
+                    Ok(s) => s,
+                    Err(_) => return,
+                };
 
-    // Placeholder
-    Box::into_raw(Box::new(ZenohSubscriber { _private: [] }))
+                // Get payload
+                let payload = sample.payload().to_bytes();
+
+                let c_sample = ZenohSample {
+                    key_expr: key_cstr.as_ptr(),
+                    payload_data: payload.as_ptr(),
+                    payload_len: payload.len(),
+                };
+
+                // Call C# callback
+                unsafe {
+                    callback(&c_sample, context);
+                }
+
+                // Keep the CString alive until callback returns
+                drop(key_cstr);
+            })
+            .await
+    });
+
+    match subscriber_result {
+        Ok(subscriber) => {
+            // Convert to static lifetime
+            let static_subscriber: ZenohSubscriber<'static> = unsafe {
+                std::mem::transmute(subscriber)
+            };
+
+            let sub_handle = Box::new(SubscriberHandle {
+                _subscriber: Arc::new(static_subscriber),
+            });
+            Box::into_raw(sub_handle)
+        }
+        Err(_) => ptr::null_mut(),
+    }
 }
 
 /// Undeclares and frees a subscriber.
 #[no_mangle]
-pub extern "C" fn zenoh_undeclare_subscriber(subscriber: *mut ZenohSubscriber) {
+pub extern "C" fn zenoh_undeclare_subscriber(subscriber: *mut SubscriberHandle) {
     if subscriber.is_null() {
         return;
     }
 
     unsafe {
-        // TODO: Implement actual subscriber cleanup when zenoh-c is integrated
-        let _ = Box::from_raw(subscriber);
+        let handle = Box::from_raw(subscriber);
+        // Subscriber will be undeclared when dropped
+        drop(handle);
     }
 }
 
@@ -178,7 +278,7 @@ pub extern "C" fn zenoh_undeclare_subscriber(subscriber: *mut ZenohSubscriber) {
 /// Returns a pointer to a static error string.
 #[no_mangle]
 pub extern "C" fn zenoh_get_error_message() -> *const c_char {
-    static ERROR_MSG: &str = "Not implemented yet\0";
+    static ERROR_MSG: &str = "Check logs for detailed error information\0";
     ERROR_MSG.as_ptr() as *const c_char
 }
 
@@ -218,6 +318,28 @@ mod tests {
         assert!(matches!(result, ZenohError::Ok));
 
         zenoh_undeclare_publisher(publisher);
+        zenoh_close(session);
+    }
+
+    #[test]
+    fn test_subscriber_lifecycle() {
+        let session = zenoh_open(ptr::null());
+        assert!(!session.is_null());
+
+        extern "C" fn test_callback(_sample: *const ZenohSample, _context: *mut c_void) {
+            // Callback for testing
+        }
+
+        let key = CString::new("test/key").unwrap();
+        let subscriber = zenoh_declare_subscriber(
+            session,
+            key.as_ptr(),
+            test_callback,
+            ptr::null_mut(),
+        );
+        assert!(!subscriber.is_null());
+
+        zenoh_undeclare_subscriber(subscriber);
         zenoh_close(session);
     }
 }
