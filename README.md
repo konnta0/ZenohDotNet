@@ -1,6 +1,41 @@
 # ZenohDotNet
 
+![Development Status](https://img.shields.io/badge/status-alpha-red)
+![Version](https://img.shields.io/badge/version-0.1.x-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple)
+
 C# bindings for [Zenoh](https://zenoh.io) distributed messaging system with embedded runtime and Unity support.
+
+---
+
+## ⚠️ Project Status
+
+**This project is in early development (v0.1.x) and is NOT ready for production use.**
+
+### Important Notices
+
+- **Breaking Changes**: The API may change significantly between versions without prior notice
+- **No Stability Guarantees**: Features may be added, modified, or removed at any time
+- **Limited Testing**: The library has not been extensively tested in real-world scenarios
+- **No Warranty**: This software is provided "AS IS" without warranty of any kind
+- **Production Use**: DO NOT use this library in production environments
+
+### What to Expect
+
+- ✅ Basic functionality works (Session, Publisher, Subscriber, Query/Queryable)
+- ⚠️ APIs are subject to change
+- ⚠️ Performance has not been optimized
+- ⚠️ Documentation may be incomplete or outdated
+- ⚠️ Some features are experimental or untested
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+See the [LICENSE](LICENSE) file for full details.
+
+---
 
 ## Overview
 
