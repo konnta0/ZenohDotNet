@@ -1,0 +1,125 @@
+name: Build Unity Package
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/ZenohDotNet.Unity/**'
+      - 'packages/com.zenohdotnet.*/**'
+      - '.github/workflows/build-unity.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'src/ZenohDotNet.Unity/**'
+      - 'packages/com.zenohdotnet.*/**'
+  workflow_dispatch:
+
+jobs:
+  build-unity:
+    name: Build Unity Package
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build native library and sync to UPM
+      run: |
+        cd native/zenoh-ffi
+        cargo build --release
+        cd ../..
+        dotnet build src/ZenohDotNet.Native/ZenohDotNet.Native.csproj -c Release
+
+    - name: Verify UPM package structure
+      run: |
+        echo "Checking com.zenohdotnet.native package..."
+        test -f packages/com.zenohdotnet.native/package.json && echo "✓ package.json exists" || exit 1
+        test -d packages/com.zenohdotnet.native/Runtime && echo "✓ Runtime directory exists" || exit 1
+        
+        echo "Checking com.zenohdotnet.unity package..."
+        test -f src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/package.json && echo "✓ package.json exists" || exit 1
+        test -d src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Runtime && echo "✓ Runtime directory exists" || exit 1
+
+    - name: Validate package.json files
+      run: |
+        echo "Validating com.zenohdotnet.native..."
+        cd packages/com.zenohdotnet.native
+        jq -e '.name' package.json > /dev/null && echo "✓ name: $(jq -r '.name' package.json)"
+        jq -e '.version' package.json > /dev/null && echo "✓ version: $(jq -r '.version' package.json)"
+        
+        echo ""
+        echo "Validating com.zenohdotnet.unity..."
+        cd ../../src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
+        jq -e '.name' package.json > /dev/null && echo "✓ name: $(jq -r '.name' package.json)"
+        jq -e '.version' package.json > /dev/null && echo "✓ version: $(jq -r '.version' package.json)"
+
+    - name: Create UPM package tarballs
+      run: |
+        mkdir -p dist
+        
+        # Package com.zenohdotnet.native
+        cd packages
+        tar -czf ../dist/com.zenohdotnet.native-0.1.0.tgz com.zenohdotnet.native/
+        cd ..
+        
+        # Package com.zenohdotnet.unity
+        cd src/ZenohDotNet.Unity/Assets/Plugins
+        tar -czf ../../../../dist/com.zenohdotnet.unity-0.1.0.tgz com.zenohdotnet.unity/
+        cd ../../../..
+        
+        echo "Created packages:"
+        ls -lh dist/
+
+    - name: Upload UPM packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: upm-packages
+        path: dist/*.tgz
+        retention-days: 30
+
+  validate-unity-compatibility:
+    name: Validate Unity Compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check .NET Standard 2.1 compatibility
+      run: |
+        echo "Checking ZenohDotNet.Native targets .NET Standard 2.1..."
+        grep -q "netstandard2.1" src/ZenohDotNet.Native/ZenohDotNet.Native.csproj && \
+          echo "✓ ZenohDotNet.Native targets .NET Standard 2.1" || \
+          (echo "✗ ZenohDotNet.Native does not target .NET Standard 2.1" && exit 1)
+
+    - name: Check asmdef files
+      run: |
+        echo "Checking asmdef references..."
+        
+        # Check ZenohDotNet.Native asmdef
+        if [ -f "packages/com.zenohdotnet.native/Runtime/ZenohDotNet.Native.asmdef" ]; then
+          echo "✓ ZenohDotNet.Native.asmdef exists"
+          jq -e '.name' packages/com.zenohdotnet.native/Runtime/ZenohDotNet.Native.asmdef
+        else
+          echo "✗ ZenohDotNet.Native.asmdef not found"
+          exit 1
+        fi
+        
+        # Check ZenohDotNet.Unity asmdef
+        if [ -f "src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Runtime/ZenohDotNet.Unity.asmdef" ]; then
+          echo "✓ ZenohDotNet.Unity.asmdef exists"
+          jq -e '.name' src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Runtime/ZenohDotNet.Unity.asmdef
+        else
+          echo "✗ ZenohDotNet.Unity.asmdef not found"
+          exit 1
+        fi

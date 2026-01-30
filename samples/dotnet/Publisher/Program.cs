@@ -1,4 +1,4 @@
-using Zenoh.Client;
+using ZenohDotNet.Client;
 
 Console.WriteLine("Zenoh Publisher Example");
 Console.WriteLine("=======================");

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet Package Metadata -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>ZenohDotNet.Client</PackageId>
+    <RootNamespace>ZenohDotNet.Client</RootNamespace>
+    <AssemblyName>ZenohDotNet.Client</AssemblyName>
+    <Version>0.1.0</Version>
+    <Description>MIT-licensed high-level async Zenoh client for .NET 8.0+. Depends on ZenohDotNet.Native, which bundles Zenoh native binaries licensed under Apache-2.0.</Description>
+    <PackageTags>zenoh;messaging;pubsub;distributed;iot;robotics;async</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ZenohDotNet.Native\ZenohDotNet.Native.csproj" />
+  </ItemGroup>
+
+</Project>

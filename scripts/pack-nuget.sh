@@ -21,28 +21,28 @@ rm -f "$OUTPUT_DIR"/*.snupkg
 echo ""
 echo "Building and packing projects..."
 
-# Pack Zenoh.Native
+# Pack ZenohDotNet.Native
 echo ""
-echo "Packing Zenoh.Native..."
-dotnet pack "$ROOT_DIR/src/Zenoh.Native/Zenoh.Native.csproj" \
+echo "Packing ZenohDotNet.Native..."
+dotnet pack "$ROOT_DIR/src/ZenohDotNet.Native/ZenohDotNet.Native.csproj" \
     -c Release \
     -o "$OUTPUT_DIR" \
     -p:IncludeSymbols=true \
     -p:SymbolPackageFormat=snupkg
 
-# Pack Zenoh.Client
+# Pack ZenohDotNet.Client
 echo ""
-echo "Packing Zenoh.Client..."
-dotnet pack "$ROOT_DIR/src/Zenoh.Client/Zenoh.Client.csproj" \
+echo "Packing ZenohDotNet.Client..."
+dotnet pack "$ROOT_DIR/src/ZenohDotNet.Client/ZenohDotNet.Client.csproj" \
     -c Release \
     -o "$OUTPUT_DIR" \
     -p:IncludeSymbols=true \
     -p:SymbolPackageFormat=snupkg
 
-# Pack Zenoh.Unity
+# Pack ZenohDotNet.Unity
 echo ""
-echo "Packing Zenoh.Unity..."
-dotnet pack "$ROOT_DIR/src/Zenoh.Unity/Zenoh.Unity.csproj" \
+echo "Packing ZenohDotNet.Unity..."
+dotnet pack "$ROOT_DIR/src/ZenohDotNet.Unity/ZenohDotNet.Unity.csproj" \
     -c Release \
     -o "$OUTPUT_DIR" \
     -p:IncludeSymbols=true \

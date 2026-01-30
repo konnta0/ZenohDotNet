@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/ZenohDotNet.Client/ZenohDotNet.Client.csproj" />
+    <Project Path="src/ZenohDotNet.Native/ZenohDotNet.Native.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZenohDotNet.Client.Tests/ZenohDotNet.Client.Tests.csproj" />
+    <Project Path="tests/ZenohDotNet.Native.Tests/ZenohDotNet.Native.Tests.csproj" />
+  </Folder>
+</Solution>

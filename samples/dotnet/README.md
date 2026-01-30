@@ -1,6 +1,6 @@
 # Zenoh .NET Samples
 
-This directory contains sample applications demonstrating how to use Zenoh.Client in .NET applications.
+This directory contains sample applications demonstrating how to use ZenohDotNet.Client in .NET applications.
 
 ## Prerequisites
 
@@ -153,7 +153,7 @@ Make sure the native library has been built:
 ./scripts/copy-bindings.sh
 ```
 
-The native libraries should be in `src/Zenoh.Native/runtimes/{rid}/native/`.
+The native libraries should be in `src/ZenohDotNet.Native/runtimes/{rid}/native/`.
 
 ### No messages received
 
@@ -164,5 +164,5 @@ The native libraries should be in `src/Zenoh.Native/runtimes/{rid}/native/`.
 ## Additional Resources
 
 - [Zenoh Documentation](https://zenoh.io/docs/)
-- [Zenoh.Client API Reference](../../src/Zenoh.Client/README.md)
-- [Zenoh.Native API Reference](../../src/Zenoh.Native/README.md)
+- [ZenohDotNet.Client API Reference](../../src/ZenohDotNet.Client/README.md)
+- [ZenohDotNet.Native API Reference](../../src/ZenohDotNet.Native/README.md)

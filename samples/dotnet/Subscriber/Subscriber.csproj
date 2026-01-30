@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Zenoh.Client\Zenoh.Client.csproj" />
+    <ProjectReference Include="..\..\..\src\ZenohDotNet.Client\ZenohDotNet.Client.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

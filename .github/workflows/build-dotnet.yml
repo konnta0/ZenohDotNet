@@ -32,13 +32,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ZenohForCSharp.sln
+        run: dotnet restore ZenohDotNet.slnx
 
       - name: Build solution
-        run: dotnet build ZenohForCSharp.sln --configuration Release --no-restore
+        run: dotnet build ZenohDotNet.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test ZenohForCSharp.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+        run: dotnet test ZenohDotNet.slnx --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
 
       - name: Upload test results
         if: always()
@@ -64,13 +64,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ZenohForCSharp.sln
+        run: dotnet restore ZenohDotNet.slnx
 
       - name: Build solution
-        run: dotnet build ZenohForCSharp.sln --configuration Release --no-restore
+        run: dotnet build ZenohDotNet.slnx --configuration Release --no-restore
 
-      - name: Pack Zenoh.Client
-        run: dotnet pack src/Zenoh.Client/Zenoh.Client.csproj --configuration Release --no-build --output ./packages
+      - name: Pack ZenohDotNet.Client
+        run: dotnet pack src/ZenohDotNet.Client/ZenohDotNet.Client.csproj --configuration Release --no-build --output ./packages
 
       - name: Upload NuGet packages
         uses: actions/upload-artifact@v4

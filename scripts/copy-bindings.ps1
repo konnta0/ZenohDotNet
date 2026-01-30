@@ -17,23 +17,23 @@ if (-not (Test-Path $generatedCs)) {
     exit 1
 }
 
-# Copy generated C# code to Zenoh.Native
+# Copy generated C# code to ZenohDotNet.Native
 Write-Host "`nCopying generated C# bindings..." -ForegroundColor Green
-$destCs = Join-Path $rootDir "src" "Zenoh.Native" "NativeMethods.cs"
+$destCs = Join-Path $rootDir "src" "ZenohDotNet.Native" "NativeMethods.g.cs"
 Copy-Item $generatedCs $destCs -Force
-Write-Host "✓ Copied NativeMethods.cs to src\Zenoh.Native\" -ForegroundColor Green
+Write-Host "✓ Copied NativeMethods.g.cs to src\ZenohDotNet.Native\" -ForegroundColor Green
 
 # Copy native libraries to runtimes directories
 Write-Host "`nCopying native libraries..." -ForegroundColor Green
 
 # Define source and destination mappings
 $libMap = @{
-    "native\output\win-x64" = "src\Zenoh.Native\runtimes\win-x64\native"
-    "native\output\win-arm64" = "src\Zenoh.Native\runtimes\win-arm64\native"
-    "native\output\linux-x64" = "src\Zenoh.Native\runtimes\linux-x64\native"
-    "native\output\linux-arm64" = "src\Zenoh.Native\runtimes\linux-arm64\native"
-    "native\output\osx-x64" = "src\Zenoh.Native\runtimes\osx-x64\native"
-    "native\output\osx-arm64" = "src\Zenoh.Native\runtimes\osx-arm64\native"
+    "native\output\win-x64" = "src\ZenohDotNet.Native\runtimes\win-x64\native"
+    "native\output\win-arm64" = "src\ZenohDotNet.Native\runtimes\win-arm64\native"
+    "native\output\linux-x64" = "src\ZenohDotNet.Native\runtimes\linux-x64\native"
+    "native\output\linux-arm64" = "src\ZenohDotNet.Native\runtimes\linux-arm64\native"
+    "native\output\osx-x64" = "src\ZenohDotNet.Native\runtimes\osx-x64\native"
+    "native\output\osx-arm64" = "src\ZenohDotNet.Native\runtimes\osx-arm64\native"
 }
 
 foreach ($srcRel in $libMap.Keys) {
@@ -66,4 +66,4 @@ Write-Host "Copy complete!" -ForegroundColor Cyan
 Write-Host "======================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Next step:" -ForegroundColor White
-Write-Host "  Build C# projects: dotnet build ZenohForCSharp.sln" -ForegroundColor White
+Write-Host "  Build C# projects: dotnet build ZenohDotNet.slnx" -ForegroundColor White

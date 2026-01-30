@@ -104,4 +104,4 @@ Write-Host "Generated C# bindings: native\output\generated\" -ForegroundColor Wh
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor White
 Write-Host "  1. Run: .\scripts\copy-bindings.ps1" -ForegroundColor White
-Write-Host "  2. Build C# projects: dotnet build ZenohForCSharp.sln" -ForegroundColor White
+Write-Host "  2. Build C# projects: dotnet build ZenohDotNet.slnx" -ForegroundColor White

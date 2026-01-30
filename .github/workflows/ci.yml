@@ -1,0 +1,164 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build native library (Linux x64 only for CI speed)
+  build-native:
+    name: Build Native (Linux x64)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/zenoh-ffi/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build native library
+        working-directory: native/zenoh-ffi
+        run: cargo build --release
+
+      - name: Upload native library
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-linux-x64
+          path: native/zenoh-ffi/target/release/libzenoh_ffi.so
+          retention-days: 1
+
+  # Build and test .NET projects
+  build-dotnet:
+    name: Build & Test .NET
+    needs: build-native
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download native library
+        uses: actions/download-artifact@v4
+        with:
+          name: native-linux-x64
+          path: native-lib
+
+      - name: Restore dependencies
+        run: dotnet restore ZenohDotNet.slnx
+
+      - name: Build solution
+        run: dotnet build ZenohDotNet.slnx -c Release --no-restore
+
+      - name: Copy native library for tests
+        run: |
+          cp native-lib/libzenoh_ffi.so tests/ZenohDotNet.Native.Tests/bin/Release/net8.0/
+          cp native-lib/libzenoh_ffi.so tests/ZenohDotNet.Client.Tests/bin/Release/net8.0/
+
+      - name: Run tests
+        run: dotnet test ZenohDotNet.slnx -c Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/test-results.trx'
+          retention-days: 7
+
+  # Validate Unity packages
+  validate-unity:
+    name: Validate Unity Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate com.zenohdotnet.native
+        run: |
+          echo "=== com.zenohdotnet.native ==="
+          cd packages/com.zenohdotnet.native
+          
+          # Check package.json
+          jq -e '.name == "com.zenohdotnet.native"' package.json > /dev/null
+          echo "✓ Package name correct"
+          
+          # Check asmdef
+          jq -e '.name == "ZenohDotNet.Native"' Runtime/ZenohDotNet.Native.asmdef > /dev/null
+          echo "✓ Assembly definition correct"
+          
+          # Check C# files exist
+          test -f Runtime/Session.cs && echo "✓ Session.cs exists"
+          test -f Runtime/Publisher.cs && echo "✓ Publisher.cs exists"
+          test -f Runtime/NativeMethods.g.cs && echo "✓ NativeMethods.g.cs exists"
+
+      - name: Validate com.zenohdotnet.unity
+        run: |
+          echo "=== com.zenohdotnet.unity ==="
+          cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
+          
+          # Check package.json
+          jq -e '.name == "com.zenohdotnet.unity"' package.json > /dev/null
+          echo "✓ Package name correct"
+          
+          jq -e '.dependencies["com.zenohdotnet.native"]' package.json > /dev/null
+          echo "✓ Depends on com.zenohdotnet.native"
+          
+          # Check asmdef
+          jq -e '.name == "ZenohDotNet.Unity"' Runtime/ZenohDotNet.Unity.asmdef > /dev/null
+          echo "✓ Assembly definition correct"
+          
+          jq -e '.references | contains(["ZenohDotNet.Native"])' Runtime/ZenohDotNet.Unity.asmdef > /dev/null
+          echo "✓ References ZenohDotNet.Native"
+
+  # Check code style and formatting
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check formatting
+        run: dotnet format ZenohDotNet.slnx --verify-no-changes --verbosity diagnostic || echo "::warning::Code formatting issues detected"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check Rust formatting
+        working-directory: native/zenoh-ffi
+        run: cargo fmt --check || echo "::warning::Rust formatting issues detected"
+
+      - name: Run Clippy
+        working-directory: native/zenoh-ffi
+        run: cargo clippy -- -D warnings || echo "::warning::Clippy warnings detected"

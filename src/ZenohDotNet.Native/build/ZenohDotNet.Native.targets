@@ -1,0 +1,53 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- 
+    This .targets file helps NuGetForUnity and standard .NET projects
+    locate the native libraries correctly.
+    
+    For Unity: NuGetForUnity will extract runtimes/ folder contents.
+    For .NET: Standard runtime resolution will use runtimes/{rid}/native/.
+  -->
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'netstandard2.1'">
+    <!-- Windows x64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/win-x64/native/zenoh_ffi.dll" 
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/win-x64/native/zenoh_ffi.dll')">
+      <Link>zenoh_ffi.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!-- Windows ARM64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/win-arm64/native/zenoh_ffi.dll"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/win-arm64/native/zenoh_ffi.dll')">
+      <Link>zenoh_ffi.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!-- Linux x64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/libzenoh_ffi.so"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/linux-x64/native/libzenoh_ffi.so')">
+      <Link>libzenoh_ffi.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!-- Linux ARM64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/linux-arm64/native/libzenoh_ffi.so"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/linux-arm64/native/libzenoh_ffi.so')">
+      <Link>libzenoh_ffi.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!-- macOS x64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/osx-x64/native/libzenoh_ffi.dylib"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/osx-x64/native/libzenoh_ffi.dylib')">
+      <Link>libzenoh_ffi.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!-- macOS ARM64 -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/osx-arm64/native/libzenoh_ffi.dylib"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/osx-arm64/native/libzenoh_ffi.dylib')">
+      <Link>libzenoh_ffi.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

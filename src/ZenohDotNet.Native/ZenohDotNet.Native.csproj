@@ -1,0 +1,109 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- NuGet Package Metadata -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>ZenohDotNet.Native</PackageId>
+    <RootNamespace>ZenohDotNet.Native</RootNamespace>
+    <AssemblyName>ZenohDotNet.Native</AssemblyName>
+    <Version>0.1.0</Version>
+    <Description>MIT-licensed Zenoh .NET/Unity FFI bindings with embedded native runtime. Bundles Zenoh native binaries licensed under Apache-2.0.</Description>
+    <PackageTags>zenoh;messaging;pubsub;distributed;iot;robotics;ffi;unity</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    
+    <!-- Unity support via contentFiles -->
+    <ContentTargetFolders>contentFiles</ContentTargetFolders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="\" />
+    <!-- Include .targets for build-time native library resolution -->
+    <None Include="build\ZenohDotNet.Native.targets" Pack="true" PackagePath="build\" />
+  </ItemGroup>
+
+  <!-- Native Libraries for all platforms -->
+  <!-- These will be populated by the build script -->
+  <ItemGroup>
+    <None Include="runtimes/win-x64/native/*.*" Condition="Exists('runtimes/win-x64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/win-x64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="runtimes/win-arm64/native/*.*" Condition="Exists('runtimes/win-arm64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/win-arm64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="runtimes/linux-x64/native/*.*" Condition="Exists('runtimes/linux-x64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/linux-x64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="runtimes/linux-arm64/native/*.*" Condition="Exists('runtimes/linux-arm64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/linux-arm64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="runtimes/osx-x64/native/*.*" Condition="Exists('runtimes/osx-x64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/osx-x64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="runtimes/osx-arm64/native/*.*" Condition="Exists('runtimes/osx-arm64/native')">
+      <Pack>true</Pack>
+      <PackagePath>runtimes/osx-arm64/native</PackagePath>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- Sync source files and native libraries to Unity package after build -->
+  <Target Name="SyncToUnityPackage" AfterTargets="Build">
+    <PropertyGroup>
+      <UnityPackagePath>$(MSBuildProjectDirectory)/../../packages/com.zenohdotnet.native</UnityPackagePath>
+      <NativeBuildPath>$(MSBuildProjectDirectory)/../../native/zenoh-ffi/target/debug</NativeBuildPath>
+    </PropertyGroup>
+    
+    <!-- Source files -->
+    <ItemGroup>
+      <SourceFilesToCopy Include="$(MSBuildProjectDirectory)/*.cs" />
+    </ItemGroup>
+    
+    <MakeDir Directories="$(UnityPackagePath)/Runtime" Condition="!Exists('$(UnityPackagePath)/Runtime')" />
+    <Copy SourceFiles="@(SourceFilesToCopy)" DestinationFolder="$(UnityPackagePath)/Runtime" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Synced source files to Unity package" />
+    
+    <!-- Native libraries (copy if exists) -->
+    <MakeDir Directories="$(UnityPackagePath)/Plugins/macOS" Condition="!Exists('$(UnityPackagePath)/Plugins/macOS')" />
+    <MakeDir Directories="$(UnityPackagePath)/Plugins/Windows/x86_64" Condition="!Exists('$(UnityPackagePath)/Plugins/Windows/x86_64')" />
+    <MakeDir Directories="$(UnityPackagePath)/Plugins/Linux/x86_64" Condition="!Exists('$(UnityPackagePath)/Plugins/Linux/x86_64')" />
+    
+    <!-- macOS -->
+    <Copy SourceFiles="$(NativeBuildPath)/libzenoh_ffi.dylib" 
+          DestinationFolder="$(UnityPackagePath)/Plugins/macOS" 
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(NativeBuildPath)/libzenoh_ffi.dylib')" />
+    
+    <!-- Windows -->
+    <Copy SourceFiles="$(NativeBuildPath)/zenoh_ffi.dll" 
+          DestinationFolder="$(UnityPackagePath)/Plugins/Windows/x86_64" 
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(NativeBuildPath)/zenoh_ffi.dll')" />
+    
+    <!-- Linux -->
+    <Copy SourceFiles="$(NativeBuildPath)/libzenoh_ffi.so" 
+          DestinationFolder="$(UnityPackagePath)/Plugins/Linux/x86_64" 
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(NativeBuildPath)/libzenoh_ffi.so')" />
+    
+    <Message Importance="high" Text="Synced native libraries to Unity package (if available)" />
+  </Target>
+
+</Project>

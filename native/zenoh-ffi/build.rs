@@ -16,7 +16,7 @@ fn main() {
         .csharp_dll_name("zenoh_ffi")
         .csharp_dll_name_if("UNITY_IOS || UNITY_WEBGL", "__Internal")
         .csharp_class_name("NativeMethods")
-        .csharp_namespace("Zenoh.Native.FFI")
+        .csharp_namespace("ZenohDotNet.Native.FFI")
         .csharp_use_function_pointer(false) // Unity compatibility
         .generate_csharp_file(output_dir.join("NativeMethods.g.cs"))
         .unwrap();

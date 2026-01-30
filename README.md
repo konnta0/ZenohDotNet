@@ -1,14 +1,14 @@
-# ZenohForCSharp
+# ZenohDotNet
 
 C# bindings for [Zenoh](https://zenoh.io) distributed messaging system with embedded runtime and Unity support.
 
 ## Overview
 
-ZenohForCSharp provides three complementary packages for using Zenoh in .NET and Unity applications:
+ZenohDotNet provides three complementary packages for using Zenoh in .NET and Unity applications:
 
-- **Zenoh.Native** - Low-level FFI bindings (.NET Standard 2.1) with embedded Zenoh runtime
-- **Zenoh.Client** - High-level async API for .NET 8.0+ with modern C# features
-- **Zenoh.Unity** - Unity-optimized wrapper with UniTask integration
+- **ZenohDotNet.Native** - Low-level FFI bindings (.NET Standard 2.1) with embedded Zenoh runtime
+- **ZenohDotNet.Client** - High-level async API for .NET 8.0+ with modern C# features
+- **ZenohDotNet.Unity** - Unity-optimized wrapper with UniTask integration
 
 ### Key Features
 
@@ -33,7 +33,7 @@ ZenohForCSharp provides three complementary packages for using Zenoh in .NET and
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│ Zenoh.Native    │  ← Layer 1: Low-level FFI bindings
+│ ZenohDotNet.Native    │  ← Layer 1: Low-level FFI bindings
 │ (.NET Std 2.1)  │     NuGet package with embedded runtime
 │ [NuGet]         │
 └────────┬────────┘
@@ -51,14 +51,14 @@ ZenohForCSharp provides three complementary packages for using Zenoh in .NET and
 
 ## Quick Start
 
-### .NET 8.0+ (Zenoh.Client)
+### .NET 8.0+ (ZenohDotNet.Client)
 
 ```bash
-dotnet add package Zenoh.Client
+dotnet add package ZenohDotNet.Client
 ```
 
 ```csharp
-using Zenoh.Client;
+using ZenohDotNet.Client;
 
 // Open session
 await using var session = await Session.OpenAsync();
@@ -76,15 +76,15 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/example/
 await Task.Delay(-1);
 ```
 
-### Unity (Zenoh.Unity)
+### Unity (ZenohDotNet.Unity)
 
 1. Install [NuGet for Unity](https://github.com/GlitchEnzo/NuGetForUnity)
-2. Install `Zenoh.Native` via NuGet for Unity
-3. Add `com.zenoh.unity` via UPM
+2. Install `ZenohDotNet.Native` via NuGet for Unity
+3. Add `com.zenohdotnet.unity` via UPM
 
 ```csharp
 using UnityEngine;
-using Zenoh.Unity;
+using ZenohDotNet.Unity;
 using Cysharp.Threading.Tasks;
 
 public class ZenohExample : MonoBehaviour
@@ -147,8 +147,8 @@ public class ZenohExample : MonoBehaviour
 
 1. **Clone the repository with submodules:**
    ```bash
-   git clone --recursive https://github.com/konnta0/ZenohForCSharp-internal.git
-   cd ZenohForCSharp-internal
+   git clone --recursive https://github.com/konnta0/ZenohDotNet.git
+   cd ZenohDotNet
    ```
 
 2. **Build Rust FFI for your platform:**
@@ -171,7 +171,7 @@ public class ZenohExample : MonoBehaviour
 
 4. **Build C# projects:**
    ```bash
-   dotnet build ZenohForCSharp.sln -c Release
+   dotnet build ZenohDotNet.slnx -c Release
    ```
 
 5. **Create NuGet packages:**
@@ -200,7 +200,7 @@ The build scripts will automatically use `cross` if available to build for all t
 ## Project Structure
 
 ```
-ZenohForCSharp-internal/
+ZenohDotNet/
 ├── native/                      # Rust FFI layer
 │   ├── zenoh-ffi/              # Rust project with csbindgen
 │   │   ├── zenoh-c/            # zenoh-c submodule
@@ -211,25 +211,29 @@ ZenohForCSharp-internal/
 │       └── {rid}/              # Native libraries per platform
 │
 ├── src/                        # C# projects
-│   ├── Zenoh.Native/           # Low-level bindings (.NET Standard 2.1)
-│   ├── Zenoh.Client/           # High-level API (.NET 8.0)
-│   └── Zenoh.Unity/            # Unity wrapper (.NET Standard 2.1)
+│   ├── ZenohDotNet.Native/           # Low-level bindings (.NET Standard 2.1)
+│   ├── ZenohDotNet.Client/           # High-level API (.NET 8.0)
+│   └── ZenohDotNet.Unity/            # Unity project (package development)
+│       └── Assets/Plugins/com.zenohdotnet.unity/  # UPM package
 │
 ├── tests/                      # Test projects
 ├── samples/                    # Example code
+│   ├── dotnet/                 # .NET console samples
+│   └── unity/                  # Unity sample projects
+│       └── ZenohUnityExample/  # Unity sample project
 ├── scripts/                    # Build automation
 ├── packages/                   # Build output (gitignored)
 │   ├── nuget/                  # NuGet packages
 │   └── upm/                    # Unity packages
 │
-└── ZenohForCSharp.sln          # Solution file
+└── ZenohDotNet.slnx          # Solution file (.NET projects only)
 ```
 
 ## Packages
 
-### Zenoh.Native
+### ZenohDotNet.Native
 
-[![NuGet](https://img.shields.io/nuget/v/Zenoh.Native.svg)](https://www.nuget.org/packages/Zenoh.Native/)
+[![NuGet](https://img.shields.io/nuget/v/ZenohDotNet.Native.svg)](https://www.nuget.org/packages/ZenohDotNet.Native/)
 
 Low-level P/Invoke bindings to Zenoh C library. Includes native runtime for all supported platforms.
 
@@ -237,31 +241,38 @@ Low-level P/Invoke bindings to Zenoh C library. Includes native runtime for all 
 - **Use case**: Low-level access, Unity compatibility
 - **API style**: Synchronous with IDisposable
 
-[Documentation](src/Zenoh.Native/README.md)
+[Documentation](src/ZenohDotNet.Native/README.md)
 
-### Zenoh.Client
+### ZenohDotNet.Client
 
-[![NuGet](https://img.shields.io/nuget/v/Zenoh.Client.svg)](https://www.nuget.org/packages/Zenoh.Client/)
+[![NuGet](https://img.shields.io/nuget/v/ZenohDotNet.Client.svg)](https://www.nuget.org/packages/ZenohDotNet.Client/)
 
-Modern async C# API built on Zenoh.Native.
+Modern async C# API built on ZenohDotNet.Native.
 
 - **Target**: .NET 8.0+
 - **Use case**: Modern .NET applications
 - **API style**: Async/await with IAsyncDisposable
 - **Features**: JSON support, record types, pattern matching
 
-[Documentation](src/Zenoh.Client/README.md)
+[Documentation](src/ZenohDotNet.Client/README.md)
 
-### Zenoh.Unity
+### ZenohDotNet.Unity
 
 Unity-optimized wrapper with UniTask integration.
 
+- **Package**: `com.zenohdotnet.unity` (UPM)
 - **Target**: .NET Standard 2.1
 - **Use case**: Unity 2021.2+ projects
 - **API style**: UniTask async + synchronous methods
 - **Features**: Main thread callbacks, Unity lifecycle integration
+- **Dependencies**: ZenohDotNet.Native (NuGet for Unity), com.cysharp.unitask (UPM)
 
-[Documentation](src/Zenoh.Unity/README.md)
+**Installation via Git URL:**
+```
+https://github.com/konnta0/ZenohDotNet.git?path=src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
+```
+
+[Documentation](docs/unity-integration.md)
 
 ## Comparison with Other Implementations
 
@@ -270,16 +281,19 @@ Unity-optimized wrapper with UniTask integration.
 | Embedded Runtime | ✅ Yes | ❌ No (requires external build) |
 | Monorepo | ✅ Yes | ❌ No |
 | Unity Support | ✅ First-class (UniTask, UPM) | ⚠️ Limited |
-| .NET 8.0 Support | ✅ Yes (Zenoh.Client) | ❌ No |
+| .NET 8.0 Support | ✅ Yes (ZenohDotNet.Client) | ❌ No |
 | Cross-platform NuGet | ✅ All platforms in one package | ⚠️ Separate builds |
 | Build Automation | ✅ Full CI/CD | ⚠️ Manual |
 
 ## Documentation
 
-- [Getting Started Guide](docs/getting-started.md) - Coming soon
-- [API Reference](docs/api-reference/) - Coming soon
-- [Unity Integration Guide](docs/unity-integration.md) - Coming soon
-- [Build Guide](docs/build-guide.md) - Coming soon
+- [Getting Started Guide](docs/getting-started.md) - Quick start for .NET and Unity
+- [Build Guide](docs/build-guide.md) - Building from source
+- [Unity Integration Guide](docs/unity-integration.md) - Unity-specific integration guide
+- [API Reference](docs/api-reference/) - Complete API documentation
+  - [ZenohDotNet.Native API](docs/api-reference/zenoh-native.md) - Low-level FFI bindings
+  - [ZenohDotNet.Client API](docs/api-reference/zenoh-client.md) - High-level async API
+  - [ZenohDotNet.Unity API](docs/api-reference/zenoh-unity.md) - Unity-optimized API
 
 ## Examples
 
@@ -305,19 +319,21 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### v0.1.0 (Current)
 - [x] Basic Session, Publisher, Subscriber
+- [x] Query/Queryable support (request-response pattern)
 - [x] Cross-platform native library packaging
-- [x] .NET Standard 2.1 support (Zenoh.Native)
-- [x] .NET 8.0 support (Zenoh.Client)
+- [x] .NET Standard 2.1 support (ZenohDotNet.Native)
+- [x] .NET 8.0 support (ZenohDotNet.Client)
 - [x] Unity support with UniTask
 - [x] Build automation scripts
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] Comprehensive documentation and samples
 
 ### v0.2.0 (Planned)
-- [ ] Query/Queryable support
 - [ ] Liveliness API
-- [ ] Configuration API
+- [ ] Advanced configuration API
 - [ ] Android and iOS support for Unity
-- [ ] CI/CD pipeline
-- [ ] Comprehensive tests
+- [ ] Integration tests with running Zenoh instances
+- [ ] Performance benchmarks
 
 ### v1.0.0 (Future)
 - [ ] Full Zenoh API coverage
@@ -345,8 +361,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- GitHub Issues: [Report bugs or request features](https://github.com/konnta0/ZenohForCSharp-internal/issues)
-- Discussions: [Ask questions and share ideas](https://github.com/konnta0/ZenohForCSharp-internal/discussions)
+- GitHub Issues: [Report bugs or request features](https://github.com/konnta0/ZenohDotNet/issues)
+- Discussions: [Ask questions and share ideas](https://github.com/konnta0/ZenohDotNet/discussions)
 
 ---
 

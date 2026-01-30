@@ -18,11 +18,11 @@ if [ ! -f "$GENERATED_CS" ]; then
     exit 1
 fi
 
-# Copy generated C# code to Zenoh.Native
+# Copy generated C# code to ZenohDotNet.Native
 echo ""
 echo "Copying generated C# bindings..."
-cp "$GENERATED_CS" "$ROOT_DIR/src/Zenoh.Native/NativeMethods.cs"
-echo "✓ Copied NativeMethods.cs to src/Zenoh.Native/"
+cp "$GENERATED_CS" "$ROOT_DIR/src/ZenohDotNet.Native/NativeMethods.g.cs"
+echo "✓ Copied NativeMethods.g.cs to src/ZenohDotNet.Native/"
 
 # Copy native libraries to runtimes directories
 echo ""
@@ -30,12 +30,12 @@ echo "Copying native libraries..."
 
 # Define source and destination mappings
 declare -A LIB_MAP=(
-    ["native/output/win-x64"]="src/Zenoh.Native/runtimes/win-x64/native"
-    ["native/output/win-arm64"]="src/Zenoh.Native/runtimes/win-arm64/native"
-    ["native/output/linux-x64"]="src/Zenoh.Native/runtimes/linux-x64/native"
-    ["native/output/linux-arm64"]="src/Zenoh.Native/runtimes/linux-arm64/native"
-    ["native/output/osx-x64"]="src/Zenoh.Native/runtimes/osx-x64/native"
-    ["native/output/osx-arm64"]="src/Zenoh.Native/runtimes/osx-arm64/native"
+    ["native/output/win-x64"]="src/ZenohDotNet.Native/runtimes/win-x64/native"
+    ["native/output/win-arm64"]="src/ZenohDotNet.Native/runtimes/win-arm64/native"
+    ["native/output/linux-x64"]="src/ZenohDotNet.Native/runtimes/linux-x64/native"
+    ["native/output/linux-arm64"]="src/ZenohDotNet.Native/runtimes/linux-arm64/native"
+    ["native/output/osx-x64"]="src/ZenohDotNet.Native/runtimes/osx-x64/native"
+    ["native/output/osx-arm64"]="src/ZenohDotNet.Native/runtimes/osx-arm64/native"
 )
 
 for src in "${!LIB_MAP[@]}"; do
@@ -65,4 +65,4 @@ echo "Copy complete!"
 echo "======================================"
 echo ""
 echo "Next step:"
-echo "  Build C# projects: dotnet build ZenohForCSharp.sln"
+echo "  Build C# projects: dotnet build ZenohDotNet.slnx"

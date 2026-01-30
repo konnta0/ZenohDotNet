@@ -4,9 +4,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- UniTask -->
-    <PackageVersion Include="UniTask" Version="2.5.4" />
-
     <!-- Testing -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="xunit" Version="2.9.2" />

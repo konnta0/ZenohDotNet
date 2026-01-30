@@ -5,7 +5,7 @@
     <Company>konnta0</Company>
     <Copyright>Copyright © 2026 konnta0</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/konnta0/ZenohForCSharp-internal</RepositoryUrl>
+    <RepositoryUrl>https://github.com/konnta0/ZenohDotNet</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
 
