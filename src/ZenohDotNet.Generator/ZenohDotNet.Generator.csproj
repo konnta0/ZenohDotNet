@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    
+    <!-- Source Generator requirements -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    
+    <!-- Package metadata -->
+    <PackageId>ZenohDotNet.Generator</PackageId>
+    <Description>Source Generator for ZenohDotNet message serialization</Description>
+    <Authors>ZenohDotNet Contributors</Authors>
+    <PackageTags>zenoh;pubsub;messaging;source-generator;roslyn</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- Include analyzer in package -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ZenohDotNet.Abstractions/ZenohDotNet.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- Pack the generator as an analyzer -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\ZenohDotNet.Abstractions.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

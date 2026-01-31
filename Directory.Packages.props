@@ -10,8 +10,17 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />
 
+    <!-- Benchmarking -->
+    <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.14.0" />
+
     <!-- Source Link -->
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+
+    <!-- Source Generator -->
+    <PackageVersion Include="System.Memory" Version="4.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" />
   </ItemGroup>
 
 </Project>

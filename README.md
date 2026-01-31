@@ -49,6 +49,7 @@ ZenohDotNet provides three complementary packages for using Zenoh in .NET and Un
 
 - **Embedded Runtime**: Zenoh C library included - no separate installation required
 - **Cross-Platform**: Windows, Linux, macOS on x64 and ARM64
+- **Mobile Support**: Android (arm64-v8a, armeabi-v7a, x86_64) and iOS (arm64)
 - **Unity Support**: First-class Unity integration with UniTask
 - **Modern C#**: Leverages .NET 8.0 features (async/await, records, pattern matching)
 - **Type Safe**: Strongly-typed APIs with compile-time safety
@@ -324,6 +325,7 @@ https://github.com/konnta0/ZenohDotNet.git?path=src/ZenohDotNet.Unity/Assets/Plu
 
 - [Getting Started Guide](docs/getting-started.md) - Quick start for .NET and Unity
 - [Build Guide](docs/build-guide.md) - Building from source
+- [Mobile Build Guide](docs/mobile-build-guide.md) - Building for Android and iOS
 - [Unity Integration Guide](docs/unity-integration.md) - Unity-specific integration guide
 - [API Reference](docs/api-reference/) - Complete API documentation
   - [ZenohDotNet.Native API](docs/api-reference/zenoh-native.md) - Low-level FFI bindings
@@ -336,6 +338,8 @@ See the [samples](samples/) directory for complete examples:
 
 - **dotnet/Publisher** - Basic publisher example
 - **dotnet/Subscriber** - Basic subscriber example
+- **dotnet/LivelinessToken** - Liveliness token example (declare alive resource)
+- **dotnet/LivelinessSubscriber** - Liveliness subscriber example (monitor resource presence)
 - **unity/ZenohUnityExample** - Unity project example
 
 ## Contributing
@@ -362,19 +366,196 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 - [x] Build automation scripts
 - [x] CI/CD pipeline (GitHub Actions)
 - [x] Comprehensive documentation and samples
+- [x] Liveliness API
+- [x] Advanced configuration API
+- [x] Android and iOS support for Unity
+- [x] Integration tests with running Zenoh instances(p2p only)
+- [x] Performance benchmarks
+- [x] Full Zenoh API coverage
+- [x] Performance optimizations (restricted)
+- [x] **Source Generator for typed messages** (ZenohDotNet.Generator)
 
-### v0.2.0 (Planned)
-- [ ] Liveliness API
-- [ ] Advanced configuration API
-- [ ] Android and iOS support for Unity
-- [ ] Integration tests with running Zenoh instances
-- [ ] Performance benchmarks
-
-### v1.0.0 (Future)
-- [ ] Full Zenoh API coverage
-- [ ] Performance optimizations
+### v0.2.0 (Future)
 - [ ] Advanced Unity features (ScriptableObjects, etc.)
 - [ ] Extensive documentation and samples
+
+## Source Generator
+
+ZenohDotNet includes an incremental source generator that provides zero-copy serialization for your message types.
+
+### Installation
+
+```xml
+<PackageReference Include="ZenohDotNet.Abstractions" Version="0.1.0" />
+<PackageReference Include="ZenohDotNet.Generator" Version="0.1.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+```
+
+### Usage
+
+Define your message type with the `[ZenohMessage]` attribute:
+
+```csharp
+using ZenohDotNet.Abstractions;
+
+[ZenohMessage("sensor/temperature")]  // Optional default key
+public partial struct SensorData
+{
+    public double Temperature { get; init; }
+    public double Humidity { get; init; }
+    public DateTime Timestamp { get; init; }
+}
+```
+
+The generator creates:
+- `ToBytes()` - Instance serialization
+- `Serialize(in T)` - Static zero-copy serialization  
+- `SerializeTo(in T, Span<byte>)` - Stack-allocated serialization
+- `Deserialize(byte[])` / `Deserialize(ReadOnlySpan<byte>)`
+- `TryDeserialize(ReadOnlySpan<byte>, out T)`
+- `DefaultKeyExpression` - Static property (if default key specified)
+- `BuildKeyExpression()` - Dynamic key construction (if key parameters specified)
+- `SubscriptionPattern` - Wildcard pattern for subscribing
+
+### Dynamic Keys with Placeholders
+
+Use `[ZenohKeyParameter]` for keys that include user IDs or other runtime values:
+
+```csharp
+[ZenohMessage("game/player/{PlayerId}/position")]
+[ZenohSubscriptionPattern("game/player/*/position")]  // Wildcard for subscribing
+public partial struct PlayerPosition
+{
+    [ZenohKeyParameter]
+    public string PlayerId { get; init; }
+    
+    public float X { get; init; }
+    public float Y { get; init; }
+}
+
+// Usage
+var position = new PlayerPosition { PlayerId = "user123", X = 10, Y = 20 };
+
+// Instance method - builds key from properties
+var key = position.BuildKeyExpression();  // "game/player/user123/position"
+
+// Static method - pass parameters directly
+var key2 = PlayerPosition.BuildKeyExpression("user456");
+
+// Subscribe to all players
+subscriber.Subscribe(PlayerPosition.SubscriptionPattern);  // "game/player/*/position"
+```
+
+### Zero-Copy Publishing
+
+```csharp
+var data = new SensorData { Temperature = 25.5, Humidity = 60.0, Timestamp = DateTime.UtcNow };
+
+// Heap allocation (simple)
+var bytes = data.ToBytes();
+
+// Zero-copy with stackalloc (high-performance)
+Span<byte> buffer = stackalloc byte[256];
+var written = SensorData.SerializeTo(in data, buffer);
+publisher.Put(buffer.Slice(0, written));
+```
+
+### Supported Types
+
+- `struct` (recommended for performance - uses `in` parameter)
+- `class`
+- `record` / `record struct`
+
+### Encoding Options
+
+```csharp
+[ZenohMessage(Encoding = ZenohEncoding.Json)]       // Default
+[ZenohMessage(Encoding = ZenohEncoding.MessagePack)] // Requires MessagePack package
+[ZenohMessage(Encoding = ZenohEncoding.Custom)]      // Custom IZenohSerializer<T>
+```
+
+### Unity Integration
+
+The Unity package includes the Source Generator in the `Editor` folder. The generator is automatically available when you import the ZenohDotNet package via UPM.
+
+**Package structure:**
+```
+com.zenohdotnet.native/
+├── Runtime/
+│   ├── ZenohDotNet.Native.asmdef
+│   └── ZenohDotNet.Abstractions.dll  (attributes for [ZenohMessage])
+├── Editor/
+│   ├── ZenohDotNet.Generator.asmdef
+│   ├── ZenohDotNet.Generator.dll     (source generator)
+│   └── ZenohDotNet.Abstractions.dll
+└── Plugins/
+    └── (native libraries)
+```
+
+**Usage in Unity:**
+```csharp
+using ZenohDotNet.Abstractions;
+
+[ZenohMessage("game/player/position")]
+public partial struct PlayerPosition
+{
+    public float X;
+    public float Y;
+    public float Z;
+}
+```
+
+## Benchmarks
+
+Performance benchmarks are available in the `benchmarks/` directory.
+
+### Running Benchmarks
+
+```bash
+# Run all benchmarks
+dotnet run -c Release --project benchmarks/ZenohDotNet.Benchmarks
+
+# Run specific benchmark class
+dotnet run -c Release --project benchmarks/ZenohDotNet.Benchmarks -- --filter "*SessionBenchmarks*"
+
+# Run quick benchmarks (shorter runs)
+dotnet run -c Release --project benchmarks/ZenohDotNet.Benchmarks -- --filter "*" --job Short
+```
+
+### Available Benchmarks
+
+- **SessionBenchmarks** - Session open/close, resource declaration
+- **PubSubBenchmarks** - Publisher/Subscriber throughput with various payload sizes
+- **QueryBenchmarks** - Query/Reply latency (single and concurrent)
+- **ThroughputBenchmarks** - Maximum messages per second
+- **LatencyBenchmarks** - End-to-end message latency
+- **AllocationBenchmarks** - Memory allocation patterns
+- **SessionConfigBenchmarks** - Configuration serialization
+
+## Performance Tips
+
+### Low-Latency Publishing
+
+For lowest latency, use synchronous `Put()` methods on a dedicated thread:
+
+```csharp
+// Zero-copy publishing with ReadOnlySpan
+publisher.Put(myData.AsSpan());
+
+// Synchronous string publishing
+publisher.Put("Hello");
+```
+
+### Memory Efficiency
+
+Use `ReadOnlyMemory<byte>` or `ReadOnlySpan<byte>` to avoid copying:
+
+```csharp
+// Async with ReadOnlyMemory (avoids array copy)
+await publisher.PutAsync(buffer.AsMemory());
+
+// Sync with ReadOnlySpan (zero-copy)
+publisher.Put(buffer.AsSpan());
+```
 
 ## License
 

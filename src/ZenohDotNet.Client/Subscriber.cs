@@ -21,7 +21,7 @@ public sealed class Subscriber : IAsyncDisposable
         // Wrap the callback to convert Native.Sample to Client.Sample
         _nativeSubscriber = session.DeclareSubscriber(keyExpr, nativeSample =>
         {
-            var clientSample = new Sample(nativeSample.KeyExpression, nativeSample.Payload);
+            var clientSample = Session.ConvertNativeSample(nativeSample);
             callback(clientSample);
         });
     }

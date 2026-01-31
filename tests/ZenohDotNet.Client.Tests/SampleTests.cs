@@ -1,5 +1,4 @@
 using ZenohDotNet.Client;
-using System.Text;
 using Xunit;
 
 namespace ZenohDotNet.Client.Tests;
@@ -11,7 +10,7 @@ public class SampleTests
     {
         // Arrange
         var keyExpr = "test/demo";
-        var payload = Encoding.UTF8.GetBytes("test data");
+        var payload = System.Text.Encoding.UTF8.GetBytes("test data");
 
         // Act
         var sample = new Sample(keyExpr, payload);
@@ -26,7 +25,7 @@ public class SampleTests
     {
         // Arrange
         var expectedString = "Hello, Zenoh!";
-        var payload = Encoding.UTF8.GetBytes(expectedString);
+        var payload = System.Text.Encoding.UTF8.GetBytes(expectedString);
         var sample = new Sample("test/demo", payload);
 
         // Act
@@ -40,7 +39,7 @@ public class SampleTests
     public void Sample_Equals_ComparesCorrectly()
     {
         // Arrange
-        var payload = Encoding.UTF8.GetBytes("test");
+        var payload = System.Text.Encoding.UTF8.GetBytes("test");
         var sample1 = new Sample("test/demo", payload);
         var sample2 = new Sample("test/demo", payload);
         var sample3 = new Sample("test/other", payload);

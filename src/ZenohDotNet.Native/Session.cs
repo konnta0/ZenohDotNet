@@ -29,7 +29,16 @@ namespace ZenohDotNet.Native
         /// <summary>
         /// Opens a new Zenoh session with default configuration.
         /// </summary>
-        public Session() : this(null)
+        public Session() : this((string?)null)
+        {
+        }
+
+        /// <summary>
+        /// Opens a new Zenoh session with the specified configuration.
+        /// </summary>
+        /// <param name="config">The session configuration.</param>
+        /// <exception cref="ZenohException">Thrown when the session cannot be created.</exception>
+        public Session(SessionConfig config) : this(config?.ToJson())
         {
         }
 

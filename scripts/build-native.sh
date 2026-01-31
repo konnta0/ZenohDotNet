@@ -117,6 +117,106 @@ else
     echo "Only native target has been built"
 fi
 
+# Android builds (requires Android NDK)
+echo ""
+echo "======================================"
+echo "Checking for Android NDK..."
+echo "======================================"
+
+if [ -n "$ANDROID_NDK_HOME" ] || [ -n "$NDK_HOME" ]; then
+    NDK_PATH="${ANDROID_NDK_HOME:-$NDK_HOME}"
+    echo "Found Android NDK at: $NDK_PATH"
+    
+    # Android targets
+    ANDROID_TARGETS=(
+        "aarch64-linux-android:android-arm64:libzenoh_ffi.so"
+        "armv7-linux-androideabi:android-arm:libzenoh_ffi.so"
+        "x86_64-linux-android:android-x86_64:libzenoh_ffi.so"
+    )
+    
+    for target_info in "${ANDROID_TARGETS[@]}"; do
+        IFS=':' read -r target rid libname <<< "$target_info"
+        
+        echo ""
+        echo "Building for Android $target..."
+        
+        # Install target if needed
+        if ! rustup target list | grep -q "$target (installed)"; then
+            echo "Installing target $target..."
+            rustup target add "$target" || echo "Warning: Could not add target $target"
+        fi
+        
+        # Set up Android toolchain
+        export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_PATH/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android21-clang"
+        export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="$NDK_PATH/toolchains/llvm/prebuilt/darwin-x86_64/bin/armv7a-linux-androideabi21-clang"
+        export CARGO_TARGET_X86_64_LINUX_ANDROID_LINKER="$NDK_PATH/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android21-clang"
+        
+        if cargo build --release --target "$target" 2>/dev/null; then
+            mkdir -p "../output/$rid"
+            cp "target/$target/release/$libname" "../output/$rid/" 2>/dev/null || true
+            echo "Successfully built and copied to ../output/$rid/"
+        else
+            echo "Warning: Failed to build for Android $target (skipping)"
+        fi
+    done
+else
+    echo "Android NDK not found (set ANDROID_NDK_HOME or NDK_HOME)"
+    echo "Skipping Android builds"
+fi
+
+# iOS builds (requires Xcode on macOS)
+echo ""
+echo "======================================"
+echo "Checking for iOS build capability..."
+echo "======================================"
+
+if [[ "$OSTYPE" == "darwin"* ]] && command -v xcrun &> /dev/null; then
+    echo "macOS with Xcode detected, building for iOS..."
+    
+    # iOS targets
+    IOS_TARGETS=(
+        "aarch64-apple-ios:ios-arm64:libzenoh_ffi.a"
+        "aarch64-apple-ios-sim:ios-sim-arm64:libzenoh_ffi.a"
+        "x86_64-apple-ios:ios-sim-x64:libzenoh_ffi.a"
+    )
+    
+    for target_info in "${IOS_TARGETS[@]}"; do
+        IFS=':' read -r target rid libname <<< "$target_info"
+        
+        echo ""
+        echo "Building for iOS $target..."
+        
+        # Install target if needed
+        if ! rustup target list | grep -q "$target (installed)"; then
+            echo "Installing target $target..."
+            rustup target add "$target" || echo "Warning: Could not add target $target"
+        fi
+        
+        if cargo build --release --target "$target" 2>/dev/null; then
+            mkdir -p "../output/$rid"
+            cp "target/$target/release/$libname" "../output/$rid/" 2>/dev/null || true
+            echo "Successfully built and copied to ../output/$rid/"
+        else
+            echo "Warning: Failed to build for iOS $target (skipping)"
+        fi
+    done
+    
+    # Create universal iOS library if both sim targets exist
+    if [ -f "../output/ios-sim-arm64/libzenoh_ffi.a" ] && [ -f "../output/ios-sim-x64/libzenoh_ffi.a" ]; then
+        echo ""
+        echo "Creating universal iOS simulator library..."
+        mkdir -p "../output/ios-sim-universal"
+        lipo -create \
+            "../output/ios-sim-arm64/libzenoh_ffi.a" \
+            "../output/ios-sim-x64/libzenoh_ffi.a" \
+            -output "../output/ios-sim-universal/libzenoh_ffi.a"
+        echo "Created universal simulator library"
+    fi
+else
+    echo "Not on macOS or Xcode not found"
+    echo "Skipping iOS builds"
+fi
+
 echo ""
 echo "======================================"
 echo "Build complete!"

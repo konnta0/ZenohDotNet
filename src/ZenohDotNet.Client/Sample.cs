@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Text.Json;
 
 namespace ZenohDotNet.Client;
@@ -9,7 +8,15 @@ namespace ZenohDotNet.Client;
 /// </summary>
 /// <param name="KeyExpression">The key expression of this sample.</param>
 /// <param name="Payload">The raw payload data.</param>
-public record Sample(string KeyExpression, byte[] Payload)
+/// <param name="Kind">The kind of this sample (Put or Delete).</param>
+/// <param name="Encoding">The encoding of this sample.</param>
+/// <param name="Timestamp">The timestamp of this sample (if available).</param>
+public record Sample(
+    string KeyExpression,
+    byte[] Payload,
+    SampleKind Kind = SampleKind.Put,
+    Encoding Encoding = Encoding.Empty,
+    Timestamp? Timestamp = null)
 {
     /// <summary>
     /// Gets the payload as a UTF-8 encoded string.
@@ -17,7 +24,7 @@ public record Sample(string KeyExpression, byte[] Payload)
     /// <returns>The payload as a string.</returns>
     public string GetPayloadAsString()
     {
-        return Encoding.UTF8.GetString(Payload);
+        return System.Text.Encoding.UTF8.GetString(Payload);
     }
 
     /// <summary>
@@ -50,11 +57,16 @@ public record Sample(string KeyExpression, byte[] Payload)
     }
 
     /// <summary>
+    /// Gets whether this sample has a valid timestamp.
+    /// </summary>
+    public bool HasTimestamp => Timestamp.HasValue;
+
+    /// <summary>
     /// Returns a string representation of this sample.
     /// </summary>
     public override string ToString()
     {
-        return $"Sample {{ KeyExpr = {KeyExpression}, PayloadLen = {Payload.Length} }}";
+        return $"Sample {{ KeyExpr = {KeyExpression}, PayloadLen = {Payload.Length}, Kind = {Kind}, Encoding = {Encoding} }}";
     }
 
     // Custom equality for byte array comparison
@@ -63,11 +75,14 @@ public record Sample(string KeyExpression, byte[] Payload)
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
         return KeyExpression == other.KeyExpression
-            && Payload.AsSpan().SequenceEqual(other.Payload);
+            && Payload.AsSpan().SequenceEqual(other.Payload)
+            && Kind == other.Kind
+            && Encoding == other.Encoding
+            && Nullable.Equals(Timestamp, other.Timestamp);
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(KeyExpression, Payload.Length);
+        return HashCode.Combine(KeyExpression, Payload.Length, Kind, Encoding);
     }
 }

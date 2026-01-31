@@ -9,11 +9,14 @@ ZenohDotNet.Client provides a modern, idiomatic .NET API for Zenoh, built on top
 ## Features
 
 - **Async/Await**: Full async API using Task-based patterns
+- **CancellationToken Support**: All async methods support cancellation
 - **Modern C#**: Utilizes .NET 8.0 features (records, pattern matching, nullable reference types)
 - **Memory Efficient**: Leverages Span<T> and modern .NET optimizations
 - **JSON Support**: Built-in System.Text.Json integration
 - **Type Safe**: Strongly-typed APIs with compile-time safety
 - **IAsyncDisposable**: Proper async resource cleanup
+- **Liveliness API**: Monitor resource presence with liveliness tokens
+- **Attachments**: Send key-value metadata alongside payloads
 
 ## Installation
 
@@ -41,6 +44,17 @@ await using var session = await Session.OpenAsync();
 // Or with custom JSON configuration
 var config = "{\"mode\":\"peer\"}";
 await using var session = await Session.OpenAsync(config);
+
+// Or with strongly-typed configuration
+var sessionConfig = new SessionConfig
+{
+    Mode = SessionMode.Peer,
+    Connect = new ConnectConfig
+    {
+        Endpoints = ["tcp/192.168.1.100:7447"]
+    }
+};
+await using var session = await Session.OpenAsync(sessionConfig);
 ```
 
 ### Publishing Data
@@ -61,6 +75,18 @@ await publisher.PutAsync(42);
 await publisher.PutAsync(DateTime.Now);
 ```
 
+### Publishing with Attachments
+
+```csharp
+// Attachments are key-value metadata sent alongside the payload
+var attachment = new Dictionary<string, string>
+{
+    ["sender"] = "device-001",
+    ["priority"] = "high"
+};
+await session.PutWithAttachmentAsync("demo/example/test", "Hello!", attachment);
+```
+
 ### Subscribing to Data
 
 ```csharp
@@ -72,6 +98,30 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/example/
 
 // Keep the application running to receive messages
 await Task.Delay(-1);
+```
+
+### Query with Timeout
+
+```csharp
+await using var session = await Session.OpenAsync();
+
+// Query with 5 second timeout
+await session.GetAsync("demo/example/**", sample =>
+{
+    Console.WriteLine($"Reply: {sample.GetPayloadAsString()}");
+}, timeout: TimeSpan.FromSeconds(5));
+```
+
+### CancellationToken Support
+
+All async methods support `CancellationToken`:
+
+```csharp
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+await using var session = await Session.OpenAsync(cts.Token);
+await using var publisher = await session.DeclarePublisherAsync("demo/test", cts.Token);
+await publisher.PutAsync("Hello", cts.Token);
 ```
 
 ### Working with JSON
@@ -96,6 +146,24 @@ await using var subscriber = await session.DeclareSubscriberAsync("sensors/**", 
 });
 ```
 
+### Liveliness API
+
+Monitor resource presence using liveliness tokens:
+
+```csharp
+// Declare a liveliness token (resource is "alive" while token exists)
+await using var token = await session.DeclareLivelinessTokenAsync("my/resource/path");
+
+// Subscribe to liveliness changes
+await using var liveSub = await session.DeclareLivelinessSubscriberAsync("my/**", (keyExpr, isAlive) =>
+{
+    if (isAlive)
+        Console.WriteLine($"{keyExpr} is now alive");
+    else
+        Console.WriteLine($"{keyExpr} has died");
+});
+```
+
 ### Pattern Matching
 
 ```csharp
@@ -114,16 +182,28 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/**", sam
 
 ### Session
 
-- `OpenAsync()` - Opens a session with default configuration
-- `OpenAsync(string? configJson)` - Opens a session with JSON configuration
-- `DeclarePublisherAsync(string keyExpr)` - Creates a publisher
-- `DeclareSubscriberAsync(string keyExpr, Action<Sample> callback)` - Creates a subscriber
+- `OpenAsync(CancellationToken ct = default)` - Opens a session with default configuration
+- `OpenAsync(string? configJson, CancellationToken ct = default)` - Opens a session with JSON configuration
+- `OpenAsync(SessionConfig config, CancellationToken ct = default)` - Opens a session with typed configuration
+- `DeclarePublisherAsync(string keyExpr, CancellationToken ct = default)` - Creates a publisher
+- `DeclarePublisherAsync(string keyExpr, PublisherOptions options, CancellationToken ct = default)` - Creates a publisher with options
+- `DeclareSubscriberAsync(string keyExpr, Action<Sample> callback, CancellationToken ct = default)` - Creates a subscriber
+- `DeclareQueryableAsync(string keyExpr, Action<Query> callback, CancellationToken ct = default)` - Creates a queryable
+- `DeclareQuerierAsync(string keyExpr, CancellationToken ct = default)` - Creates a querier
+- `GetAsync(string selector, Action<Sample> callback, CancellationToken ct = default)` - Performs a query
+- `GetAsync(string selector, Action<Sample> callback, TimeSpan timeout, CancellationToken ct = default)` - Query with timeout
+- `PutAsync(string keyExpr, byte[] data, CancellationToken ct = default)` - Direct put without publisher
+- `PutWithAttachmentAsync(string keyExpr, byte[] data, IDictionary<string, string> attachment, CancellationToken ct = default)` - Put with attachment
+- `DeleteAsync(string keyExpr, CancellationToken ct = default)` - Delete a key expression
+- `DeclareLivelinessTokenAsync(string keyExpr, CancellationToken ct = default)` - Declare a liveliness token
+- `DeclareLivelinessSubscriberAsync(string keyExpr, Action<string, bool> callback, CancellationToken ct = default)` - Subscribe to liveliness changes
+- `GetZenohIdAsync(CancellationToken ct = default)` - Gets the session's Zenoh ID
 
 ### Publisher
 
-- `PutAsync(byte[] data)` - Publishes binary data
-- `PutAsync(string value)` - Publishes a UTF-8 string
-- `PutAsync<T>(T value)` - Publishes a value (uses ToString)
+- `PutAsync(byte[] data, CancellationToken ct = default)` - Publishes binary data
+- `PutAsync(string value, CancellationToken ct = default)` - Publishes a UTF-8 string
+- `PutAsync<T>(T value, CancellationToken ct = default)` - Publishes a value (uses ToString)
 - `KeyExpression` - Gets the key expression
 
 ### Subscriber
@@ -135,9 +215,31 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/**", sam
 
 - `KeyExpression` - The key expression
 - `Payload` - Raw byte array payload
+- `Kind` - Sample kind (Put or Delete)
+- `Encoding` - Payload encoding
+- `Timestamp` - Optional timestamp
 - `GetPayloadAsString()` - Converts payload to UTF-8 string
 - `TryGetPayloadAsJson<T>()` - Tries to deserialize as JSON (returns null on failure)
 - `GetPayloadAsJson<T>()` - Deserializes as JSON (throws on failure)
+
+### SessionConfig
+
+Strongly-typed configuration:
+
+```csharp
+var config = new SessionConfig
+{
+    Mode = SessionMode.Peer,  // or Client, Router
+    Connect = new ConnectConfig
+    {
+        Endpoints = ["tcp/192.168.1.100:7447"]
+    },
+    Listen = new ListenConfig
+    {
+        Endpoints = ["tcp/0.0.0.0:7448"]
+    }
+};
+```
 
 ## Comparison with ZenohDotNet.Native
 
@@ -145,8 +247,11 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/**", sam
 |---------|--------------|--------------|
 | Target | .NET Standard 2.1 | .NET 8.0+ |
 | API Style | Synchronous | Async/Await |
+| CancellationToken | ❌ | ✅ |
 | Resource Cleanup | IDisposable | IAsyncDisposable |
 | JSON Support | Manual | Built-in |
+| Typed Config | ❌ | ✅ SessionConfig |
+| Query Timeout | ❌ | ✅ |
 | Modern C# | Limited | Full (records, pattern matching, etc.) |
 | Use Case | Low-level, Unity | Modern .NET apps |
 

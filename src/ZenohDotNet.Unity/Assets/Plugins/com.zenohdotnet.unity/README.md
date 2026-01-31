@@ -180,6 +180,48 @@ catch (OperationCanceledException)
 - `GetPayloadAsString()` - Converts to UTF-8 string
 - `TryGetPayloadAsString(out string)` - Safe string conversion
 
+## Source Generator
+
+The Unity package includes an Incremental Source Generator for typed messages.
+
+### Usage
+
+```csharp
+using ZenohDotNet.Abstractions;
+
+[ZenohMessage("game/player/position")]
+public partial struct PlayerPosition
+{
+    public float X;
+    public float Y;
+    public float Z;
+}
+
+// Generated methods available:
+// - PlayerPosition.ToBytes()
+// - PlayerPosition.Serialize(in PlayerPosition)
+// - PlayerPosition.Deserialize(byte[])
+// - PlayerPosition.DefaultKeyExpression
+```
+
+### Dynamic Keys
+
+```csharp
+[ZenohMessage("game/player/{PlayerId}/position")]
+public partial struct PlayerPosition
+{
+    [ZenohKeyParameter]
+    public string PlayerId { get; init; }
+    public float X, Y, Z;
+}
+
+// Build key from properties
+var pos = new PlayerPosition { PlayerId = "user123", X = 10, Y = 20 };
+var key = pos.BuildKeyExpression();  // "game/player/user123/position"
+```
+
+See the main README for full Source Generator documentation.
+
 ## Unity Editor Tools
 
 Access via **Tools → Zenoh** menu:

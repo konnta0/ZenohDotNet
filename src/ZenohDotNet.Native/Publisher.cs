@@ -71,6 +71,23 @@ namespace ZenohDotNet.Native
         }
 
         /// <summary>
+        /// Publishes data from a ReadOnlySpan (zero-copy when possible).
+        /// </summary>
+        public unsafe void Put(ReadOnlySpan<byte> data)
+        {
+            ThrowIfDisposed();
+
+            fixed (byte* dataPtr = data)
+            {
+                var result = NativeMethods.zenoh_publisher_put(_handle, dataPtr, (nuint)data.Length);
+                if (result != ZenohError.Ok)
+                {
+                    throw new ZenohException($"Failed to put data: error code {result}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Publishes a string as UTF-8 encoded bytes.
         /// </summary>
         public void Put(string value)

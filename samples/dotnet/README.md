@@ -2,6 +2,15 @@
 
 This directory contains sample applications demonstrating how to use ZenohDotNet.Client in .NET applications.
 
+## Samples
+
+| Sample | Description |
+|--------|-------------|
+| [Publisher](Publisher/) | Publishes messages to a key expression |
+| [Subscriber](Subscriber/) | Subscribes to messages with wildcard matching |
+| [LivelinessToken](LivelinessToken/) | Declares a liveliness token (resource presence) |
+| [LivelinessSubscriber](LivelinessSubscriber/) | Monitors liveliness changes |
+
 ## Prerequisites
 
 - .NET 8.0 SDK or later
@@ -16,9 +25,11 @@ From the repository root:
 ./scripts/build-native.sh
 ./scripts/copy-bindings.sh
 
-# Build the samples
+# Build all samples
 dotnet build samples/dotnet/Publisher/Publisher.csproj
 dotnet build samples/dotnet/Subscriber/Subscriber.csproj
+dotnet build samples/dotnet/LivelinessToken/LivelinessToken.csproj
+dotnet build samples/dotnet/LivelinessSubscriber/LivelinessSubscriber.csproj
 ```
 
 ## Running the Samples
@@ -77,9 +88,61 @@ Listening for messages (Ctrl+C to stop)...
 ...
 ```
 
+### LivelinessToken
+
+Declares a liveliness token to signal resource availability:
+
+```bash
+cd samples/dotnet/LivelinessToken
+dotnet run
+```
+
+Output:
+```
+Zenoh Liveliness Token Example
+==============================
+
+Opening Zenoh session...
+Session opened successfully!
+Zenoh ID: xxxx
+
+Declaring liveliness token on 'my/liveliness/token'...
+Token declared! Resource is now alive.
+
+Press any key to undeclare the token and exit...
+```
+
+### LivelinessSubscriber
+
+Monitors liveliness changes on a key expression:
+
+```bash
+cd samples/dotnet/LivelinessSubscriber
+dotnet run
+```
+
+Output:
+```
+Zenoh Liveliness Subscriber Example
+===================================
+
+Opening Zenoh session...
+Session opened successfully!
+Zenoh ID: xxxx
+
+Subscribing to liveliness on 'my/**'...
+Subscriber declared!
+
+Listening for liveliness changes (Ctrl+C to stop)...
+
+[14:30:15] my/liveliness/token is ALIVE
+[14:30:20] my/liveliness/token is DEAD
+...
+```
+
 ## Testing Communication
 
-To test the pub/sub communication:
+### Pub/Sub
 
 1. Open two terminal windows
 2. In the first terminal, run the **Subscriber**:
@@ -93,7 +156,20 @@ To test the pub/sub communication:
    dotnet run
    ```
 
-You should see messages appear in the Subscriber terminal as the Publisher sends them.
+### Liveliness
+
+1. Open two terminal windows
+2. In the first terminal, run the **LivelinessSubscriber**:
+   ```bash
+   cd samples/dotnet/LivelinessSubscriber
+   dotnet run
+   ```
+3. In the second terminal, run the **LivelinessToken**:
+   ```bash
+   cd samples/dotnet/LivelinessToken
+   dotnet run
+   ```
+4. Press any key in the LivelinessToken terminal to see the token become "dead"
 
 ## Key Concepts
 
@@ -127,6 +203,28 @@ await using var subscriber = await session.DeclareSubscriberAsync("demo/example/
 await Task.Delay(-1);
 ```
 
+### Liveliness Token
+
+```csharp
+// Open a session
+await using var session = await Session.OpenAsync();
+
+// Declare a liveliness token
+await using var token = await session.DeclareLivelinessTokenAsync("my/resource");
+
+// Token is alive while it exists, dead when disposed
+```
+
+### Liveliness Subscriber
+
+```csharp
+// Subscribe to liveliness changes
+await using var sub = await session.DeclareLivelinessSubscriberAsync("my/**", (keyExpr, isAlive) =>
+{
+    Console.WriteLine($"{keyExpr} is {(isAlive ? "ALIVE" : "DEAD")}");
+});
+```
+
 ## Configuration
 
 Zenoh sessions can be configured with JSON:
@@ -138,6 +236,21 @@ var config = @"{
         ""endpoints"": [""tcp/localhost:7447""]
     }
 }";
+
+await using var session = await Session.OpenAsync(config);
+```
+
+Or with strongly-typed configuration:
+
+```csharp
+var config = new SessionConfig
+{
+    Mode = SessionMode.Peer,
+    Connect = new ConnectConfig
+    {
+        Endpoints = ["tcp/localhost:7447"]
+    }
+};
 
 await using var session = await Session.OpenAsync(config);
 ```

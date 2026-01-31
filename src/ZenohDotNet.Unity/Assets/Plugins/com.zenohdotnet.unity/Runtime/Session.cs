@@ -19,7 +19,20 @@ namespace ZenohDotNet.Unity
         /// <returns>A UniTask representing the async operation, containing the Session.</returns>
         public static async UniTask<Session> OpenAsync(CancellationToken cancellationToken = default)
         {
-            return await OpenAsync(null, cancellationToken);
+            return await OpenAsync((string)null, cancellationToken);
+        }
+
+        /// <summary>
+        /// Opens a new Zenoh session asynchronously with the specified configuration.
+        /// </summary>
+        /// <param name="config">The session configuration.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A UniTask representing the async operation, containing the Session.</returns>
+        public static async UniTask<Session> OpenAsync(SessionConfig config, CancellationToken cancellationToken = default)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+            return await OpenAsync(config.ToJson(), cancellationToken);
         }
 
         /// <summary>
@@ -28,7 +41,7 @@ namespace ZenohDotNet.Unity
         /// <param name="configJson">JSON configuration string, or null for default configuration.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A UniTask representing the async operation, containing the Session.</returns>
-        public static async UniTask<Session> OpenAsync(string? configJson, CancellationToken cancellationToken = default)
+        public static async UniTask<Session> OpenAsync(string configJson, CancellationToken cancellationToken = default)
         {
             return await UniTask.RunOnThreadPool(() =>
             {
@@ -168,6 +181,69 @@ namespace ZenohDotNet.Unity
                 };
 
                 _nativeSession.Get(selector, wrappedCallback);
+            }, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Declares a liveliness token for the specified key expression.
+        /// The token signals that a resource is alive. When disposed, the resource is considered dead.
+        /// </summary>
+        /// <param name="keyExpr">The key expression for the liveliness token.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A UniTask representing the async operation, containing the LivelinessToken.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when keyExpr is null or empty.</exception>
+        /// <exception cref="ZenohDotNet.Native.ZenohException">Thrown when the token cannot be created.</exception>
+        public async UniTask<LivelinessToken> DeclareLivelinessTokenAsync(
+            string keyExpr,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(keyExpr))
+                throw new ArgumentNullException(nameof(keyExpr));
+
+            ThrowIfDisposed();
+
+            return await UniTask.RunOnThreadPool(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return new LivelinessToken(_nativeSession, keyExpr);
+            }, cancellationToken: cancellationToken);
+        }
+
+        /// <summary>
+        /// Declares a liveliness subscriber for the specified key expression.
+        /// The subscriber receives notifications when liveliness tokens are created or dropped.
+        /// The callback will be invoked on the Unity main thread.
+        /// </summary>
+        /// <param name="keyExpr">The key expression to subscribe to (supports wildcards like "my/**").</param>
+        /// <param name="callback">The callback invoked when a liveliness change occurs (runs on main thread).
+        /// Parameters are (keyExpression, isAlive) where isAlive is true when a token is declared, false when dropped.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A UniTask representing the async operation, containing the LivelinessSubscriber.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when keyExpr or callback is null.</exception>
+        /// <exception cref="ZenohDotNet.Native.ZenohException">Thrown when the subscriber cannot be created.</exception>
+        public async UniTask<LivelinessSubscriber> DeclareLivelinessSubscriberAsync(
+            string keyExpr,
+            Action<string, bool> callback,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(keyExpr))
+                throw new ArgumentNullException(nameof(keyExpr));
+            if (callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            ThrowIfDisposed();
+
+            return await UniTask.RunOnThreadPool(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Wrap callback to execute on Unity main thread
+                Action<string, bool> wrappedCallback = (tokenKeyExpr, isAlive) =>
+                {
+                    UniTask.Post(() => callback(tokenKeyExpr, isAlive));
+                };
+
+                return new LivelinessSubscriber(_nativeSession, keyExpr, wrappedCallback);
             }, cancellationToken: cancellationToken);
         }
 

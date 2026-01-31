@@ -5,11 +5,18 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/src/">
+    <Project Path="src/ZenohDotNet.Abstractions/ZenohDotNet.Abstractions.csproj" />
     <Project Path="src/ZenohDotNet.Client/ZenohDotNet.Client.csproj" />
+    <Project Path="src/ZenohDotNet.Generator/ZenohDotNet.Generator.csproj" />
     <Project Path="src/ZenohDotNet.Native/ZenohDotNet.Native.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ZenohDotNet.Client.Tests/ZenohDotNet.Client.Tests.csproj" />
+    <Project Path="tests/ZenohDotNet.Generator.Tests/ZenohDotNet.Generator.Tests.csproj" />
     <Project Path="tests/ZenohDotNet.Native.Tests/ZenohDotNet.Native.Tests.csproj" />
+    <Project Path="tests/ZenohDotNet.IntegrationTests/ZenohDotNet.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/ZenohDotNet.Benchmarks/ZenohDotNet.Benchmarks.csproj" />
   </Folder>
 </Solution>
