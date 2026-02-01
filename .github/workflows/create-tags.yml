@@ -1,0 +1,63 @@
+name: Create Release Tags
+
+# When v* is pushed, create individual package tags
+# This allows tracking each package version independently
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: true
+      force:
+        description: 'Force overwrite existing tags'
+        type: boolean
+        default: false
+
+jobs:
+  create-tags:
+    name: Create Package Tags
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Extract version from tag (v1.0.0 -> 1.0.0)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create package tags
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          FORCE="${{ github.event.inputs.force }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create individual package tags
+          for prefix in client native unity; do
+            TAG="${prefix}/v${VERSION}"
+            echo "Creating tag: $TAG"
+            if [ "$FORCE" = "true" ]; then
+              git tag -f "$TAG"
+            else
+              git tag "$TAG" 2>/dev/null || echo "Tag $TAG already exists (use force to overwrite)"
+            fi
+          done
+          
+          # Push all tags (force if requested)
+          if [ "$FORCE" = "true" ]; then
+            git push origin --tags --force
+          else
+            git push origin --tags

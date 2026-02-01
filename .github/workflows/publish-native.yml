@@ -1,0 +1,152 @@
+name: Publish Native
+
+on:
+  push:
+    tags:
+      - 'native/v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: true
+      force:
+        description: 'Force overwrite existing release'
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rid: win-x64
+            lib: zenoh_ffi.dll
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            rid: win-arm64
+            lib: zenoh_ffi.dll
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            rid: linux-x64
+            lib: libzenoh_ffi.so
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            rid: linux-arm64
+            lib: libzenoh_ffi.so
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            rid: osx-x64
+            lib: libzenoh_ffi.dylib
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            rid: osx-arm64
+            lib: libzenoh_ffi.dylib
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Build
+        working-directory: native/zenoh-ffi
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: native/zenoh-ffi/target/${{ matrix.target }}/release/${{ matrix.lib }}
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: native/output
+
+      - name: Copy native libraries
+        run: |
+          mkdir -p src/ZenohDotNet.Native/runtimes
+          for rid in win-x64 win-arm64 linux-x64 linux-arm64 osx-x64 osx-arm64; do
+            mkdir -p src/ZenohDotNet.Native/runtimes/$rid/native
+            cp -r native/output/native-$rid/* src/ZenohDotNet.Native/runtimes/$rid/native/ || true
+          done
+
+      - name: Pack
+        run: |
+          dotnet restore ZenohDotNet.slnx
+          dotnet pack src/ZenohDotNet.Native -c Release -o packages
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-native
+          path: packages/*.nupkg
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=native/v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=${GITHUB_REF#refs/tags/native/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "tag=native/v$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create tag (if manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG="${{ steps.version.outputs.tag }}"
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            git tag -f "$TAG"
+            git push origin "$TAG" --force
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Publish to NuGet
+        run: dotnet nuget push packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+      - name: Delete existing release (if force)
+        if: github.event.inputs.force == 'true'
+        run: gh release delete "${{ steps.version.outputs.tag }}" --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Native ${{ steps.version.outputs.version }}
+          files: packages/*.nupkg
+          generate_release_notes: true
