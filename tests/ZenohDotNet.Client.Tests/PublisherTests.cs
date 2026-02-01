@@ -6,6 +6,7 @@ namespace ZenohDotNet.Client.Tests;
 public class PublisherTests
 {
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Publisher_PutAsync_ByteArray_Succeeds()
     {
         // Arrange
@@ -18,6 +19,7 @@ public class PublisherTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Publisher_PutAsync_String_Succeeds()
     {
         // Arrange
@@ -29,6 +31,7 @@ public class PublisherTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Publisher_PutAsync_GenericType_Succeeds()
     {
         // Arrange

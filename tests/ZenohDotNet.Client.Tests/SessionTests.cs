@@ -6,6 +6,7 @@ namespace ZenohDotNet.Client.Tests;
 public class SessionTests
 {
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_OpenAsync_Succeeds()
     {
         // Act
@@ -16,6 +17,7 @@ public class SessionTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_OpenAsyncWithConfig_Succeeds()
     {
         // Arrange
@@ -29,6 +31,7 @@ public class SessionTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_DeclarePublisherAsync_Succeeds()
     {
         // Arrange
@@ -43,6 +46,7 @@ public class SessionTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_DeclareSubscriberAsync_Succeeds()
     {
         // Arrange

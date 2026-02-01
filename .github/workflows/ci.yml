@@ -59,7 +59,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Run tests
-        run: dotnet test tests/ZenohDotNet.Client.Tests -c Release --verbosity normal
+        run: dotnet test tests/ZenohDotNet.Client.Tests -c Release --verbosity normal --filter "Category!=RequiresNative"
 
   # Test - Native (requires native library - skip in CI, run locally)
   test-native:
@@ -101,6 +101,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build to sync Unity package
+        run: dotnet build src/ZenohDotNet.Native -c Release
 
       - name: Validate packages
         run: |

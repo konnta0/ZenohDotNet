@@ -49,6 +49,7 @@ public class SessionConfigTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_OpenWithConfig_Succeeds()
     {
         // Arrange

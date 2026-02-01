@@ -212,8 +212,10 @@ PublishScripts/
 # NuGet Symbol Packages
 *.snupkg
 # The packages folder can be ignored because of Package Restore
+# Exclude the root /packages/ directory (our Unity packages) from this rule
 **/[Pp]ackages/*
-# except build/, which is used as an MSBuild target.
+!/packages/
+!/packages/**
 !**/[Pp]ackages/build/
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
@@ -541,3 +543,20 @@ ExportedObj/
 ehthumbs.db
 Thumbs.db
 .idea
+
+# Unity/UPM packages - track source files, ignore binaries
+!/packages/
+!/packages/**
+# Ignore native binaries in Unity packages (they are built by CI)
+packages/**/Plugins/**/*.dylib
+packages/**/Plugins/**/*.so
+packages/**/Plugins/**/*.dll
+packages/**/Plugins/**/*.a
+# Ignore copied DLLs (they are copied from build output)
+packages/**/*.dll
+# Ignore copied source files and their meta files (synced from src/ZenohDotNet.Native during build)
+packages/**/Runtime/*.cs
+packages/**/Runtime/*.cs.meta
+# Ignore Runtime folder itself (created during build)
+packages/**/Runtime.meta
+packages/**/Runtime/

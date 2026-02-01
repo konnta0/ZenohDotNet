@@ -5,6 +5,7 @@ namespace ZenohDotNet.Client.Tests;
 public class LivelinessTests
 {
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_DeclareLivelinessTokenAsync_Succeeds()
     {
         // Arrange
@@ -19,6 +20,7 @@ public class LivelinessTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task Session_DeclareLivelinessSubscriberAsync_Succeeds()
     {
         // Arrange
@@ -38,6 +40,7 @@ public class LivelinessTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task LivelinessToken_DisposesCorrectly()
     {
         // Arrange
@@ -49,6 +52,7 @@ public class LivelinessTests
     }
 
     [Fact]
+    [Trait("Category", "RequiresNative")]
     public async Task LivelinessSubscriber_DisposesCorrectly()
     {
         // Arrange
