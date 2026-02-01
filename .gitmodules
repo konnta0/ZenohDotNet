@@ -1,3 +1,0 @@
-[submodule "native/zenoh-ffi/zenoh-c"]
-	path = native/zenoh-ffi/zenoh-c
-	url = https://github.com/eclipse-zenoh/zenoh-c.git
