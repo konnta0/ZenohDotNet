@@ -13,9 +13,12 @@
     <!-- Package metadata -->
     <PackageId>ZenohDotNet.Generator</PackageId>
     <Description>Source Generator for ZenohDotNet message serialization</Description>
-    <Authors>ZenohDotNet Contributors</Authors>
+    <Authors>konnta0</Authors>
     <PackageTags>zenoh;pubsub;messaging;source-generator;roslyn</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/konnta0/ZenohDotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/konnta0/ZenohDotNet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     
     <!-- Include analyzer in package -->
     <IncludeBuildOutput>false</IncludeBuildOutput>

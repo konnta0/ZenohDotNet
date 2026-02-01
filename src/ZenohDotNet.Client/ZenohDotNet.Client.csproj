@@ -15,6 +15,11 @@
     <Description>MIT-licensed high-level async Zenoh client for .NET 8.0+. Depends on ZenohDotNet.Native, which bundles Zenoh native binaries licensed under Apache-2.0.</Description>
     <PackageTags>zenoh;messaging;pubsub;distributed;iot;robotics;async</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/konnta0/ZenohDotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/konnta0/ZenohDotNet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Authors>konnta0</Authors>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

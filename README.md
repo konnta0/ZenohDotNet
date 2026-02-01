@@ -323,14 +323,9 @@ https://github.com/konnta0/ZenohDotNet.git?path=src/ZenohDotNet.Unity/Assets/Plu
 
 ## Documentation
 
-- [Getting Started Guide](docs/getting-started.md) - Quick start for .NET and Unity
-- [Build Guide](docs/build-guide.md) - Building from source
 - [Mobile Build Guide](docs/mobile-build-guide.md) - Building for Android and iOS
-- [Unity Integration Guide](docs/unity-integration.md) - Unity-specific integration guide
-- [API Reference](docs/api-reference/) - Complete API documentation
-  - [ZenohDotNet.Native API](docs/api-reference/zenoh-native.md) - Low-level FFI bindings
-  - [ZenohDotNet.Client API](docs/api-reference/zenoh-client.md) - High-level async API
-  - [ZenohDotNet.Unity API](docs/api-reference/zenoh-unity.md) - Unity-optimized API
+- [ZenohDotNet.Native README](src/ZenohDotNet.Native/README.md) - Low-level FFI bindings documentation
+- [ZenohDotNet.Client README](src/ZenohDotNet.Client/README.md) - High-level async API documentation
 
 ## Examples
 

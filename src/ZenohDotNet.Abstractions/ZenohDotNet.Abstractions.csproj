@@ -9,9 +9,12 @@
     <!-- Package metadata -->
     <PackageId>ZenohDotNet.Abstractions</PackageId>
     <Description>Attributes and interfaces for ZenohDotNet Source Generator</Description>
-    <Authors>ZenohDotNet Contributors</Authors>
+    <Authors>konnta0</Authors>
     <PackageTags>zenoh;pubsub;messaging;source-generator;attributes</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/konnta0/ZenohDotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/konnta0/ZenohDotNet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
