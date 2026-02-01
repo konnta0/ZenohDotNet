@@ -34,7 +34,7 @@ namespace ZenohDotNet.Native
 
             if (_handle == null)
             {
-                throw new ZenohException($"Failed to declare liveliness token for key expression: {keyExpr}");
+                throw ZenohException.FromLastError("Failed to declare liveliness token for key expression: {keyExpr}");
             }
         }
 

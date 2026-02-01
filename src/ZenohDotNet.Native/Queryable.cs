@@ -46,7 +46,7 @@ namespace ZenohDotNet.Native
             if (_handle == null)
             {
                 _callbackHandle.Free();
-                throw new ZenohException($"Failed to declare queryable for key expression: {keyExpr}");
+                throw ZenohException.FromLastError("Failed to declare queryable for key expression: {keyExpr}");
             }
         }
 
@@ -160,7 +160,7 @@ namespace ZenohDotNet.Native
                 var result = NativeMethods.zenoh_query_reply(_handle, keyPtr, dataPtr, (nuint)data.Length);
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to reply to query: error code {result}");
+                    throw ZenohException.FromLastError("Failed to reply to query: error code {result}");
                 }
             }
 

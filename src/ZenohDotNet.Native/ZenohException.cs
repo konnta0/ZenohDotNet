@@ -31,5 +31,30 @@ namespace ZenohDotNet.Native
         public ZenohException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+        /// <summary>
+        /// Gets the last error message from the native Zenoh library.
+        /// </summary>
+        /// <returns>The error message, or null if no error occurred.</returns>
+        public static unsafe string? GetLastNativeError()
+        {
+            var errorPtr = FFI.NativeMethods.zenoh_last_error();
+            if (errorPtr == null)
+                return null;
+            return System.Runtime.InteropServices.Marshal.PtrToStringUTF8((IntPtr)errorPtr);
+        }
+
+        /// <summary>
+        /// Creates a ZenohException with the last native error message appended.
+        /// </summary>
+        /// <param name="message">The base error message.</param>
+        /// <returns>A new ZenohException with detailed error information.</returns>
+        public static ZenohException FromLastError(string message)
+        {
+            var nativeError = GetLastNativeError();
+            if (string.IsNullOrEmpty(nativeError))
+                return new ZenohException(message);
+            return new ZenohException($"{message}: {nativeError}");
+        }
     }
 }

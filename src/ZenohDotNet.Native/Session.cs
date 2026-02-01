@@ -69,7 +69,7 @@ namespace ZenohDotNet.Native
 
                 if (_handle == null)
                 {
-                    throw new ZenohException("Failed to open Zenoh session");
+                    throw ZenohException.FromLastError("Failed to open Zenoh session");
                 }
             }
             finally
@@ -123,7 +123,7 @@ namespace ZenohDotNet.Native
                 var result = NativeMethods.zenoh_put(_handle, keyPtr, dataPtr, (nuint)data.Length);
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to put data: error code {result}");
+                    throw ZenohException.FromLastError("Failed to put data: error code {result}");
                 }
             }
         }
@@ -155,7 +155,7 @@ namespace ZenohDotNet.Native
                 var result = NativeMethods.zenoh_delete(_handle, keyPtr);
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to delete: error code {result}");
+                    throw ZenohException.FromLastError("Failed to delete: error code {result}");
                 }
             }
         }
@@ -186,7 +186,7 @@ namespace ZenohDotNet.Native
 
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to put with encoding: error code {result}");
+                    throw ZenohException.FromLastError("Failed to put with encoding: error code {result}");
                 }
             }
         }
@@ -252,7 +252,7 @@ namespace ZenohDotNet.Native
 
                     if (result != ZenohError.Ok)
                     {
-                        throw new ZenohException($"Failed to put with attachment: error code {result}");
+                        throw ZenohException.FromLastError("Failed to put with attachment: error code {result}");
                     }
                 }
                 finally
@@ -314,7 +314,7 @@ namespace ZenohDotNet.Native
             var zidPtr = NativeMethods.zenoh_session_zid(_handle);
             if (zidPtr == null)
             {
-                throw new ZenohException("Failed to get Zenoh ID");
+                throw ZenohException.FromLastError("Failed to get Zenoh ID");
             }
 
             try
@@ -418,7 +418,7 @@ namespace ZenohDotNet.Native
 
                     if (result != ZenohError.Ok)
                     {
-                        throw new ZenohException($"Get query failed with error code: {result}");
+                        throw ZenohException.FromLastError("Get query failed with error code: {result}");
                     }
                 }
             }

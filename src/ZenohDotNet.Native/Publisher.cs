@@ -46,7 +46,7 @@ namespace ZenohDotNet.Native
 
             if (_handle == null)
             {
-                throw new ZenohException($"Failed to declare publisher for key expression: {keyExpr}");
+                throw ZenohException.FromLastError($"Failed to declare publisher for key expression: {keyExpr}");
             }
         }
 
@@ -65,7 +65,7 @@ namespace ZenohDotNet.Native
                 var result = NativeMethods.zenoh_publisher_put(_handle, dataPtr, (nuint)data.Length);
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to put data: error code {result}");
+                    throw ZenohException.FromLastError($"Failed to put data: error code {result}");
                 }
             }
         }
@@ -82,7 +82,7 @@ namespace ZenohDotNet.Native
                 var result = NativeMethods.zenoh_publisher_put(_handle, dataPtr, (nuint)data.Length);
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to put data: error code {result}");
+                    throw ZenohException.FromLastError($"Failed to put data: error code {result}");
                 }
             }
         }
@@ -119,7 +119,7 @@ namespace ZenohDotNet.Native
 
                 if (result != ZenohError.Ok)
                 {
-                    throw new ZenohException($"Failed to put with encoding: error code {result}");
+                    throw ZenohException.FromLastError($"Failed to put with encoding: error code {result}");
                 }
             }
         }
@@ -145,7 +145,7 @@ namespace ZenohDotNet.Native
             var result = NativeMethods.zenoh_publisher_delete(_handle);
             if (result != ZenohError.Ok)
             {
-                throw new ZenohException($"Failed to delete: error code {result}");
+                throw ZenohException.FromLastError($"Failed to delete: error code {result}");
             }
         }
 

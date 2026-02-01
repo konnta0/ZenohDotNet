@@ -1,5 +1,7 @@
 use once_cell::sync::Lazy;
+use std::cell::RefCell;
 use std::ffi::{c_char, c_void, CStr, CString};
+use std::panic;
 use std::ptr;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
@@ -16,7 +18,39 @@ static RUNTIME: Lazy<Runtime> = Lazy::new(|| {
     Runtime::new().expect("Failed to create Tokio runtime")
 });
 
-// Internal wrapper types (not exposed to C#)
+// ============== Error Handling ==============
+
+thread_local! {
+    static LAST_ERROR: RefCell<Option<CString>> = const { RefCell::new(None) };
+}
+
+fn set_error(msg: impl ToString) {
+    LAST_ERROR.with(|e| {
+        *e.borrow_mut() = CString::new(msg.to_string()).ok();
+    });
+}
+
+fn clear_error() {
+    LAST_ERROR.with(|e| {
+        *e.borrow_mut() = None;
+    });
+}
+
+/// Gets the last error message.
+/// Returns NULL if no error occurred.
+/// The returned string is valid until the next FFI call on the same thread.
+#[no_mangle]
+pub extern "C" fn zenoh_last_error() -> *const c_char {
+    LAST_ERROR.with(|e| {
+        match e.borrow().as_ref() {
+            Some(s) => s.as_ptr(),
+            None => ptr::null(),
+        }
+    })
+}
+
+// ============== Internal Wrapper Types ==============
+
 struct SessionWrapper {
     session: Arc<Session>,
 }
@@ -154,46 +188,69 @@ pub enum ZenohError {
     InvalidKeyExpr = 3,
     PutFailed = 4,
     NullPointer = 5,
+    Panic = 254,
     Unknown = 255,
 }
 
-/// Opens a Zenoh session with the given configuration (JSON string).
+/// Opens a Zenoh session with the given configuration (JSON5 string).
 /// Pass NULL or empty string for default configuration.
 /// Returns a pointer on success, NULL on failure.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_open(config_json: *const c_char) -> *mut c_void {
-    let config = if config_json.is_null() {
-        Config::default()
-    } else {
-        let config_str = unsafe {
-            match CStr::from_ptr(config_json).to_str() {
-                Ok(s) => s,
-                Err(_) => return ptr::null_mut(),
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        let config = if config_json.is_null() {
+            Config::default()
+        } else {
+            let config_str = unsafe {
+                match CStr::from_ptr(config_json).to_str() {
+                    Ok(s) => s,
+                    Err(e) => {
+                        set_error(format!("Invalid UTF-8 in config: {}", e));
+                        return ptr::null_mut();
+                    }
+                }
+            };
+
+            if config_str.is_empty() {
+                Config::default()
+            } else {
+                match Config::from_json5(config_str) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        set_error(format!("Config parse error: {}", e));
+                        return ptr::null_mut();
+                    }
+                }
             }
         };
 
-        if config_str.is_empty() {
-            Config::default()
-        } else {
-            match serde_json::from_str::<serde_json::Value>(config_str) {
-                Ok(_) => Config::default(),
-                Err(_) => return ptr::null_mut(),
+        let session_result = RUNTIME.block_on(async {
+            zenoh::open(config).await
+        });
+
+        match session_result {
+            Ok(session) => {
+                let handle = Box::new(SessionWrapper {
+                    session: Arc::new(session),
+                });
+                Box::into_raw(handle) as *mut c_void
+            }
+            Err(e) => {
+                set_error(format!("Failed to open session: {}", e));
+                ptr::null_mut()
             }
         }
-    };
-
-    let session_result = RUNTIME.block_on(async {
-        zenoh::open(config).await
     });
-
-    match session_result {
-        Ok(session) => {
-            let handle = Box::new(SessionWrapper {
-                session: Arc::new(session),
-            });
-            Box::into_raw(handle) as *mut c_void
+    
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_open");
+            ptr::null_mut()
         }
-        Err(_) => ptr::null_mut(),
     }
 }
 
@@ -203,79 +260,123 @@ pub extern "C" fn zenoh_close(session: *mut c_void) {
     if session.is_null() {
         return;
     }
-    unsafe {
-        let _ = Box::from_raw(session as *mut SessionWrapper);
-    }
+    let _ = panic::catch_unwind(|| {
+        unsafe {
+            let _ = Box::from_raw(session as *mut SessionWrapper);
+        }
+    });
 }
 
 /// Declares a publisher on the given key expression.
 /// Returns a pointer on success, NULL on failure.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_declare_publisher(
     session: *mut c_void,
     key_expr: *const c_char,
 ) -> *mut c_void {
-    if session.is_null() || key_expr.is_null() {
-        return ptr::null_mut();
-    }
-
-    let handle = unsafe { &*(session as *const SessionWrapper) };
-    let key = unsafe {
-        match CStr::from_ptr(key_expr).to_str() {
-            Ok(s) => s,
-            Err(_) => return ptr::null_mut(),
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if session.is_null() {
+            set_error("Session pointer is null");
+            return ptr::null_mut();
         }
-    };
+        if key_expr.is_null() {
+            set_error("Key expression is null");
+            return ptr::null_mut();
+        }
 
-    let publisher_result = RUNTIME.block_on(async {
-        handle.session.declare_publisher(key).await
+        let handle = unsafe { &*(session as *const SessionWrapper) };
+        let key = unsafe {
+            match CStr::from_ptr(key_expr).to_str() {
+                Ok(s) => s,
+                Err(e) => {
+                    set_error(format!("Invalid UTF-8 in key expression: {}", e));
+                    return ptr::null_mut();
+                }
+            }
+        };
+
+        let publisher_result = RUNTIME.block_on(async {
+            handle.session.declare_publisher(key).await
+        });
+
+        match publisher_result {
+            Ok(publisher) => {
+                let static_publisher: Publisher<'static> = unsafe {
+                    std::mem::transmute(publisher)
+                };
+                let pub_handle = Box::new(PublisherWrapper {
+                    publisher: Arc::new(static_publisher),
+                });
+                Box::into_raw(pub_handle) as *mut c_void
+            }
+            Err(e) => {
+                set_error(format!("Failed to declare publisher: {}", e));
+                ptr::null_mut()
+            }
+        }
     });
-
-    match publisher_result {
-        Ok(publisher) => {
-            let static_publisher: Publisher<'static> = unsafe {
-                std::mem::transmute(publisher)
-            };
-            let pub_handle = Box::new(PublisherWrapper {
-                publisher: Arc::new(static_publisher),
-            });
-            Box::into_raw(pub_handle) as *mut c_void
+    
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_declare_publisher");
+            ptr::null_mut()
         }
-        Err(_) => ptr::null_mut(),
     }
 }
 
 /// Publishes data on the given publisher.
 /// Returns ZenohError code.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_publisher_put(
     publisher: *mut c_void,
     payload: *const u8,
     payload_len: usize,
 ) -> ZenohError {
-    if publisher.is_null() {
-        return ZenohError::NullPointer;
-    }
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if publisher.is_null() {
+            set_error("Publisher pointer is null");
+            return ZenohError::NullPointer;
+        }
 
-    // Allow empty payload (payload can be null if len is 0)
-    if payload.is_null() && payload_len > 0 {
-        return ZenohError::NullPointer;
-    }
+        // Allow empty payload (payload can be null if len is 0)
+        if payload.is_null() && payload_len > 0 {
+            set_error("Payload pointer is null but length > 0");
+            return ZenohError::NullPointer;
+        }
 
-    let handle = unsafe { &*(publisher as *const PublisherWrapper) };
-    let data = if payload.is_null() || payload_len == 0 {
-        Vec::new()
-    } else {
-        unsafe { std::slice::from_raw_parts(payload, payload_len) }.to_vec()
-    };
+        let handle = unsafe { &*(publisher as *const PublisherWrapper) };
+        let data = if payload.is_null() || payload_len == 0 {
+            Vec::new()
+        } else {
+            unsafe { std::slice::from_raw_parts(payload, payload_len) }.to_vec()
+        };
 
-    let result = RUNTIME.block_on(async {
-        handle.publisher.put(data).await
+        let put_result = RUNTIME.block_on(async {
+            handle.publisher.put(data).await
+        });
+
+        match put_result {
+            Ok(_) => ZenohError::Ok,
+            Err(e) => {
+                set_error(format!("Put failed: {}", e));
+                ZenohError::PutFailed
+            }
+        }
     });
-
+    
     match result {
-        Ok(_) => ZenohError::Ok,
-        Err(_) => ZenohError::PutFailed,
+        Ok(err) => err,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_publisher_put");
+            ZenohError::Panic
+        }
     }
 }
 
@@ -285,13 +386,16 @@ pub extern "C" fn zenoh_undeclare_publisher(publisher: *mut c_void) {
     if publisher.is_null() {
         return;
     }
-    unsafe {
-        let _ = Box::from_raw(publisher as *mut PublisherWrapper);
-    }
+    let _ = panic::catch_unwind(|| {
+        unsafe {
+            let _ = Box::from_raw(publisher as *mut PublisherWrapper);
+        }
+    });
 }
 
 /// Declares a subscriber on the given key expression with a callback.
 /// Returns a pointer on success, NULL on failure.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_declare_subscriber(
     session: *mut c_void,
@@ -299,75 +403,98 @@ pub extern "C" fn zenoh_declare_subscriber(
     callback: ZenohSubscriberCallback,
     context: *mut c_void,
 ) -> *mut c_void {
-    if session.is_null() || key_expr.is_null() {
-        return ptr::null_mut();
-    }
-
-    let handle = unsafe { &*(session as *const SessionWrapper) };
-    let key = unsafe {
-        match CStr::from_ptr(key_expr).to_str() {
-            Ok(s) => s,
-            Err(_) => return ptr::null_mut(),
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if session.is_null() {
+            set_error("Session pointer is null");
+            return ptr::null_mut();
         }
-    };
+        if key_expr.is_null() {
+            set_error("Key expression is null");
+            return ptr::null_mut();
+        }
 
-    let context_ptr = context as usize;
-
-    let subscriber_result = RUNTIME.block_on(async {
-        handle.session
-            .declare_subscriber(key)
-            .callback(move |sample: Sample| {
-                let key_cstr = match CString::new(sample.key_expr().as_str()) {
-                    Ok(s) => s,
-                    Err(_) => return,
-                };
-
-                let payload = sample.payload().to_bytes();
-                let kind = match sample.kind() {
-                    SampleKind::Put => ZenohSampleKind::Put,
-                    SampleKind::Delete => ZenohSampleKind::Delete,
-                };
-
-                // Get encoding
-                let encoding_id = encoding_to_id(sample.encoding());
-
-                // Get timestamp
-                let (timestamp_valid, timestamp) = match sample.timestamp() {
-                    Some(ts) => {
-                        let ntp = ts.get_time().as_u64();
-                        let id_bytes = ts.get_id().to_le_bytes();
-                        let mut id = [0u8; 16];
-                        id.copy_from_slice(&id_bytes[..16.min(id_bytes.len())]);
-                        (true, ZenohTimestamp { time_ntp64: ntp, id })
-                    }
-                    None => (false, ZenohTimestamp { time_ntp64: 0, id: [0u8; 16] }),
-                };
-
-                let c_sample = SampleData {
-                    key_expr: key_cstr.as_ptr(),
-                    payload_data: payload.as_ptr(),
-                    payload_len: payload.len(),
-                    kind,
-                    encoding_id,
-                    timestamp_valid,
-                    timestamp,
-                };
-
-                unsafe {
-                    callback(&c_sample, context_ptr as *mut c_void);
+        let handle = unsafe { &*(session as *const SessionWrapper) };
+        let key = unsafe {
+            match CStr::from_ptr(key_expr).to_str() {
+                Ok(s) => s,
+                Err(e) => {
+                    set_error(format!("Invalid UTF-8 in key expression: {}", e));
+                    return ptr::null_mut();
                 }
-            })
-            .await
-    });
+            }
+        };
 
-    match subscriber_result {
-        Ok(subscriber) => {
-            let sub_handle = Box::new(SubscriberWrapper {
-                _subscriber: Arc::new(subscriber),
-            });
-            Box::into_raw(sub_handle) as *mut c_void
+        let context_ptr = context as usize;
+
+        let subscriber_result = RUNTIME.block_on(async {
+            handle.session
+                .declare_subscriber(key)
+                .callback(move |sample: Sample| {
+                    let key_cstr = match CString::new(sample.key_expr().as_str()) {
+                        Ok(s) => s,
+                        Err(_) => return,
+                    };
+
+                    let payload = sample.payload().to_bytes();
+                    let kind = match sample.kind() {
+                        SampleKind::Put => ZenohSampleKind::Put,
+                        SampleKind::Delete => ZenohSampleKind::Delete,
+                    };
+
+                    // Get encoding
+                    let encoding_id = encoding_to_id(sample.encoding());
+
+                    // Get timestamp
+                    let (timestamp_valid, timestamp) = match sample.timestamp() {
+                        Some(ts) => {
+                            let ntp = ts.get_time().as_u64();
+                            let id_bytes = ts.get_id().to_le_bytes();
+                            let mut id = [0u8; 16];
+                            id.copy_from_slice(&id_bytes[..16.min(id_bytes.len())]);
+                            (true, ZenohTimestamp { time_ntp64: ntp, id })
+                        }
+                        None => (false, ZenohTimestamp { time_ntp64: 0, id: [0u8; 16] }),
+                    };
+
+                    let c_sample = SampleData {
+                        key_expr: key_cstr.as_ptr(),
+                        payload_data: payload.as_ptr(),
+                        payload_len: payload.len(),
+                        kind,
+                        encoding_id,
+                        timestamp_valid,
+                        timestamp,
+                    };
+
+                    unsafe {
+                        callback(&c_sample, context_ptr as *mut c_void);
+                    }
+                })
+                .await
+        });
+
+        match subscriber_result {
+            Ok(subscriber) => {
+                let sub_handle = Box::new(SubscriberWrapper {
+                    _subscriber: Arc::new(subscriber),
+                });
+                Box::into_raw(sub_handle) as *mut c_void
+            }
+            Err(e) => {
+                set_error(format!("Failed to declare subscriber: {}", e));
+                ptr::null_mut()
+            }
         }
-        Err(_) => ptr::null_mut(),
+    });
+    
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_declare_subscriber");
+            ptr::null_mut()
+        }
     }
 }
 
@@ -377,17 +504,11 @@ pub extern "C" fn zenoh_undeclare_subscriber(subscriber: *mut c_void) {
     if subscriber.is_null() {
         return;
     }
-    unsafe {
-        let _ = Box::from_raw(subscriber as *mut SubscriberWrapper);
-    }
-}
-
-/// Gets the last error message (for debugging).
-/// Returns a pointer to a static error string.
-#[no_mangle]
-pub extern "C" fn zenoh_get_error_message() -> *const c_char {
-    static ERROR_MSG: &str = "Check logs for detailed error information\0";
-    ERROR_MSG.as_ptr() as *const c_char
+    let _ = panic::catch_unwind(|| {
+        unsafe {
+            let _ = Box::from_raw(subscriber as *mut SubscriberWrapper);
+        }
+    });
 }
 
 /// Frees a string allocated by the Zenoh FFI.
@@ -396,13 +517,16 @@ pub extern "C" fn zenoh_free_string(s: *mut c_char) {
     if s.is_null() {
         return;
     }
-    unsafe {
-        let _ = CString::from_raw(s);
-    }
+    let _ = panic::catch_unwind(|| {
+        unsafe {
+            let _ = CString::from_raw(s);
+        }
+    });
 }
 
 /// Performs a get query (request-response pattern).
 /// Returns 0 on success, error code on failure.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_get(
     session: *mut c_void,
@@ -410,74 +534,98 @@ pub extern "C" fn zenoh_get(
     callback: ZenohGetCallback,
     context: *mut c_void,
 ) -> ZenohError {
-    if session.is_null() || selector.is_null() {
-        return ZenohError::NullPointer;
-    }
-
-    let handle = unsafe { &*(session as *const SessionWrapper) };
-    let selector_str = unsafe {
-        match CStr::from_ptr(selector).to_str() {
-            Ok(s) => s,
-            Err(_) => return ZenohError::InvalidKeyExpr,
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if session.is_null() {
+            set_error("Session pointer is null");
+            return ZenohError::NullPointer;
         }
-    };
+        if selector.is_null() {
+            set_error("Selector is null");
+            return ZenohError::NullPointer;
+        }
 
-    let result = RUNTIME.block_on(async {
-        let replies = handle.session.get(selector_str).await;
+        let handle = unsafe { &*(session as *const SessionWrapper) };
+        let selector_str = unsafe {
+            match CStr::from_ptr(selector).to_str() {
+                Ok(s) => s,
+                Err(e) => {
+                    set_error(format!("Invalid UTF-8 in selector: {}", e));
+                    return ZenohError::InvalidKeyExpr;
+                }
+            }
+        };
 
-        match replies {
-            Ok(reply_receiver) => {
-                while let Ok(reply) = reply_receiver.recv_async().await {
-                    if let Ok(sample) = reply.result() {
-                        let key_cstr = match CString::new(sample.key_expr().as_str()) {
-                            Ok(s) => s,
-                            Err(_) => continue,
-                        };
+        let query_result = RUNTIME.block_on(async {
+            let replies = handle.session.get(selector_str).await;
 
-                        let payload = sample.payload().to_bytes();
-                        let kind = match sample.kind() {
-                            SampleKind::Put => ZenohSampleKind::Put,
-                            SampleKind::Delete => ZenohSampleKind::Delete,
-                        };
+            match replies {
+                Ok(reply_receiver) => {
+                    while let Ok(reply) = reply_receiver.recv_async().await {
+                        if let Ok(sample) = reply.result() {
+                            let key_cstr = match CString::new(sample.key_expr().as_str()) {
+                                Ok(s) => s,
+                                Err(_) => continue,
+                            };
 
-                        let encoding_id = encoding_to_id(sample.encoding());
-                        let (timestamp_valid, timestamp) = match sample.timestamp() {
-                            Some(ts) => {
-                                let ntp = ts.get_time().as_u64();
-                                let id_bytes = ts.get_id().to_le_bytes();
-                                let mut id = [0u8; 16];
-                                id.copy_from_slice(&id_bytes[..16.min(id_bytes.len())]);
-                                (true, ZenohTimestamp { time_ntp64: ntp, id })
+                            let payload = sample.payload().to_bytes();
+                            let kind = match sample.kind() {
+                                SampleKind::Put => ZenohSampleKind::Put,
+                                SampleKind::Delete => ZenohSampleKind::Delete,
+                            };
+
+                            let encoding_id = encoding_to_id(sample.encoding());
+                            let (timestamp_valid, timestamp) = match sample.timestamp() {
+                                Some(ts) => {
+                                    let ntp = ts.get_time().as_u64();
+                                    let id_bytes = ts.get_id().to_le_bytes();
+                                    let mut id = [0u8; 16];
+                                    id.copy_from_slice(&id_bytes[..16.min(id_bytes.len())]);
+                                    (true, ZenohTimestamp { time_ntp64: ntp, id })
+                                }
+                                None => (false, ZenohTimestamp { time_ntp64: 0, id: [0u8; 16] }),
+                            };
+
+                            let c_sample = SampleData {
+                                key_expr: key_cstr.as_ptr(),
+                                payload_data: payload.as_ptr(),
+                                payload_len: payload.len(),
+                                kind,
+                                encoding_id,
+                                timestamp_valid,
+                                timestamp,
+                            };
+
+                            unsafe {
+                                callback(&c_sample, context);
                             }
-                            None => (false, ZenohTimestamp { time_ntp64: 0, id: [0u8; 16] }),
-                        };
-
-                        let c_sample = SampleData {
-                            key_expr: key_cstr.as_ptr(),
-                            payload_data: payload.as_ptr(),
-                            payload_len: payload.len(),
-                            kind,
-                            encoding_id,
-                            timestamp_valid,
-                            timestamp,
-                        };
-
-                        unsafe {
-                            callback(&c_sample, context);
                         }
                     }
+                    ZenohError::Ok
                 }
-                ZenohError::Ok
+                Err(e) => {
+                    set_error(format!("Get query failed: {}", e));
+                    ZenohError::Unknown
+                }
             }
-            Err(_) => ZenohError::Unknown,
-        }
+        });
+
+        query_result
     });
 
-    result
+    match result {
+        Ok(err) => err,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_get");
+            ZenohError::Panic
+        }
+    }
 }
 
 /// Declares a queryable that responds to get queries.
 /// Returns a pointer on success, NULL on failure.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_declare_queryable(
     session: *mut c_void,
@@ -485,49 +633,73 @@ pub extern "C" fn zenoh_declare_queryable(
     callback: ZenohQueryableCallback,
     context: *mut c_void,
 ) -> *mut c_void {
-    if session.is_null() || key_expr.is_null() {
-        return ptr::null_mut();
-    }
-
-    let handle = unsafe { &*(session as *const SessionWrapper) };
-    let key = unsafe {
-        match CStr::from_ptr(key_expr).to_str() {
-            Ok(s) => s,
-            Err(_) => return ptr::null_mut(),
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if session.is_null() {
+            set_error("Session pointer is null");
+            return ptr::null_mut();
         }
-    };
+        if key_expr.is_null() {
+            set_error("Key expression is null");
+            return ptr::null_mut();
+        }
 
-    let context_ptr = context as usize;
-
-    let queryable_result = RUNTIME.block_on(async {
-        handle.session
-            .declare_queryable(key)
-            .callback(move |query: Query| {
-                let query_handle = Box::new(QueryWrapper {
-                    query: Box::new(query),
-                });
-                let query_ptr = Box::into_raw(query_handle) as *mut c_void;
-
-                unsafe {
-                    callback(query_ptr, context_ptr as *mut c_void);
+        let handle = unsafe { &*(session as *const SessionWrapper) };
+        let key = unsafe {
+            match CStr::from_ptr(key_expr).to_str() {
+                Ok(s) => s,
+                Err(e) => {
+                    set_error(format!("Invalid UTF-8 in key expression: {}", e));
+                    return ptr::null_mut();
                 }
-            })
-            .await
-    });
+            }
+        };
 
-    match queryable_result {
-        Ok(queryable) => {
-            let handle = Box::new(QueryableWrapper {
-                _queryable: Arc::new(queryable),
-            });
-            Box::into_raw(handle) as *mut c_void
+        let context_ptr = context as usize;
+
+        let queryable_result = RUNTIME.block_on(async {
+            handle.session
+                .declare_queryable(key)
+                .callback(move |query: Query| {
+                    let query_handle = Box::new(QueryWrapper {
+                        query: Box::new(query),
+                    });
+                    let query_ptr = Box::into_raw(query_handle) as *mut c_void;
+
+                    unsafe {
+                        callback(query_ptr, context_ptr as *mut c_void);
+                    }
+                })
+                .await
+        });
+
+        match queryable_result {
+            Ok(queryable) => {
+                let handle = Box::new(QueryableWrapper {
+                    _queryable: Arc::new(queryable),
+                });
+                Box::into_raw(handle) as *mut c_void
+            }
+            Err(e) => {
+                set_error(format!("Failed to declare queryable: {}", e));
+                ptr::null_mut()
+            }
         }
-        Err(_) => ptr::null_mut(),
+    });
+    
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_declare_queryable");
+            ptr::null_mut()
+        }
     }
 }
 
 /// Replies to a query with data.
 /// The query handle is consumed by this operation.
+/// Call zenoh_last_error() for error details.
 #[no_mangle]
 pub extern "C" fn zenoh_query_reply(
     query: *mut c_void,
@@ -535,41 +707,75 @@ pub extern "C" fn zenoh_query_reply(
     payload: *const u8,
     payload_len: usize,
 ) -> ZenohError {
-    if query.is_null() || key_expr.is_null() || payload.is_null() {
-        return ZenohError::NullPointer;
-    }
-
-    let query_handle = unsafe { Box::from_raw(query as *mut QueryWrapper) };
-    let key = unsafe {
-        match CStr::from_ptr(key_expr).to_str() {
-            Ok(s) => s.to_string(),
-            Err(_) => return ZenohError::InvalidKeyExpr,
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if query.is_null() {
+            set_error("Query pointer is null");
+            return ZenohError::NullPointer;
         }
-    };
-    let data = unsafe { std::slice::from_raw_parts(payload, payload_len) }.to_vec();
+        if key_expr.is_null() {
+            set_error("Key expression is null");
+            return ZenohError::NullPointer;
+        }
+        if payload.is_null() {
+            set_error("Payload pointer is null");
+            return ZenohError::NullPointer;
+        }
 
-    // Use separate thread to avoid nested runtime issues
-    use tokio::runtime::Handle;
-    if Handle::try_current().is_ok() {
-        let handle = RUNTIME.handle().clone();
-        let (tx, rx) = std::sync::mpsc::channel();
-        std::thread::spawn(move || {
-            let result = handle.block_on(async {
+        let query_handle = unsafe { Box::from_raw(query as *mut QueryWrapper) };
+        let key = unsafe {
+            match CStr::from_ptr(key_expr).to_str() {
+                Ok(s) => s.to_string(),
+                Err(e) => {
+                    set_error(format!("Invalid UTF-8 in key expression: {}", e));
+                    return ZenohError::InvalidKeyExpr;
+                }
+            }
+        };
+        let data = unsafe { std::slice::from_raw_parts(payload, payload_len) }.to_vec();
+
+        // Use separate thread to avoid nested runtime issues
+        use tokio::runtime::Handle;
+        if Handle::try_current().is_ok() {
+            let handle = RUNTIME.handle().clone();
+            let (tx, rx) = std::sync::mpsc::channel();
+            std::thread::spawn(move || {
+                let result = handle.block_on(async {
+                    query_handle.query.reply(key, data).await
+                });
+                let _ = tx.send(result);
+            });
+            match rx.recv() {
+                Ok(Ok(_)) => ZenohError::Ok,
+                Ok(Err(e)) => {
+                    set_error(format!("Query reply failed: {}", e));
+                    ZenohError::Unknown
+                }
+                Err(_) => {
+                    set_error("Query reply channel error");
+                    ZenohError::Unknown
+                }
+            }
+        } else {
+            let reply_result = RUNTIME.block_on(async {
                 query_handle.query.reply(key, data).await
             });
-            let _ = tx.send(result);
-        });
-        match rx.recv() {
-            Ok(Ok(_)) => ZenohError::Ok,
-            _ => ZenohError::Unknown,
+            match reply_result {
+                Ok(_) => ZenohError::Ok,
+                Err(e) => {
+                    set_error(format!("Query reply failed: {}", e));
+                    ZenohError::Unknown
+                }
+            }
         }
-    } else {
-        let result = RUNTIME.block_on(async {
-            query_handle.query.reply(key, data).await
-        });
-        match result {
-            Ok(_) => ZenohError::Ok,
-            Err(_) => ZenohError::Unknown,
+    });
+    
+    match result {
+        Ok(err) => err,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_query_reply");
+            ZenohError::Panic
         }
     }
 }
@@ -578,17 +784,33 @@ pub extern "C" fn zenoh_query_reply(
 /// Returns a C string that must be freed with zenoh_free_string.
 #[no_mangle]
 pub extern "C" fn zenoh_query_selector(query: *const c_void) -> *mut c_char {
-    if query.is_null() {
-        return ptr::null_mut();
-    }
+    clear_error();
+    
+    let result = panic::catch_unwind(|| {
+        if query.is_null() {
+            set_error("Query pointer is null");
+            return ptr::null_mut();
+        }
 
-    let handle = unsafe { &*(query as *const QueryWrapper) };
-    let selector = handle.query.selector();
-    let key_expr_str = selector.key_expr().as_str();
+        let handle = unsafe { &*(query as *const QueryWrapper) };
+        let selector = handle.query.selector();
+        let key_expr_str = selector.key_expr().as_str();
 
-    match CString::new(key_expr_str) {
-        Ok(cstr) => cstr.into_raw(),
-        Err(_) => ptr::null_mut(),
+        match CString::new(key_expr_str) {
+            Ok(cstr) => cstr.into_raw(),
+            Err(e) => {
+                set_error(format!("Invalid string: {}", e));
+                ptr::null_mut()
+            }
+        }
+    });
+    
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => {
+            set_error("Panic occurred in zenoh_query_selector");
+            ptr::null_mut()
+        }
     }
 }
 
@@ -598,9 +820,11 @@ pub extern "C" fn zenoh_undeclare_queryable(queryable: *mut c_void) {
     if queryable.is_null() {
         return;
     }
-    unsafe {
-        let _ = Box::from_raw(queryable as *mut QueryableWrapper);
-    }
+    let _ = panic::catch_unwind(|| {
+        unsafe {
+            let _ = Box::from_raw(queryable as *mut QueryableWrapper);
+        }
+    });
 }
 
 // ============== Publisher with Options ==============

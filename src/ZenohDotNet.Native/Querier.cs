@@ -29,7 +29,7 @@ namespace ZenohDotNet.Native
 
             if (_handle == null)
             {
-                throw new ZenohException($"Failed to declare querier for key expression: {keyExpr}");
+                throw ZenohException.FromLastError("Failed to declare querier for key expression: {keyExpr}");
             }
         }
 
@@ -79,7 +79,7 @@ namespace ZenohDotNet.Native
 
             if (result != ZenohError.Ok)
             {
-                throw new ZenohException($"Querier get failed with error: {result}");
+                throw ZenohException.FromLastError("Querier get failed with error: {result}");
             }
         }
 

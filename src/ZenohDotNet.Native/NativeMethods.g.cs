@@ -39,9 +39,18 @@ namespace ZenohDotNet.Native.FFI
 
 
         /// <summary>
-        ///  Opens a Zenoh session with the given configuration (JSON string).
+        ///  Gets the last error message.
+        ///  Returns NULL if no error occurred.
+        ///  The returned string is valid until the next FFI call on the same thread.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "zenoh_last_error", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern byte* zenoh_last_error();
+
+        /// <summary>
+        ///  Opens a Zenoh session with the given configuration (JSON5 string).
         ///  Pass NULL or empty string for default configuration.
         ///  Returns a pointer on success, NULL on failure.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_open", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* zenoh_open(byte* config_json);
@@ -55,6 +64,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Declares a publisher on the given key expression.
         ///  Returns a pointer on success, NULL on failure.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_declare_publisher", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* zenoh_declare_publisher(void* session, byte* key_expr);
@@ -62,6 +72,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Publishes data on the given publisher.
         ///  Returns ZenohError code.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_publisher_put", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern ZenohError zenoh_publisher_put(void* publisher, byte* payload, nuint payload_len);
@@ -75,6 +86,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Declares a subscriber on the given key expression with a callback.
         ///  Returns a pointer on success, NULL on failure.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_declare_subscriber", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* zenoh_declare_subscriber(void* session, byte* key_expr, zenoh_declare_subscriber_callback_delegate callback, void* context);
@@ -86,13 +98,6 @@ namespace ZenohDotNet.Native.FFI
         internal static extern void zenoh_undeclare_subscriber(void* subscriber);
 
         /// <summary>
-        ///  Gets the last error message (for debugging).
-        ///  Returns a pointer to a static error string.
-        /// </summary>
-        [DllImport(__DllName, EntryPoint = "zenoh_get_error_message", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern byte* zenoh_get_error_message();
-
-        /// <summary>
         ///  Frees a string allocated by the Zenoh FFI.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_free_string", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
@@ -101,6 +106,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Performs a get query (request-response pattern).
         ///  Returns 0 on success, error code on failure.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_get", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern ZenohError zenoh_get(void* session, byte* selector, zenoh_get_callback_delegate callback, void* context);
@@ -108,6 +114,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Declares a queryable that responds to get queries.
         ///  Returns a pointer on success, NULL on failure.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_declare_queryable", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void* zenoh_declare_queryable(void* session, byte* key_expr, zenoh_declare_queryable_callback_delegate callback, void* context);
@@ -115,6 +122,7 @@ namespace ZenohDotNet.Native.FFI
         /// <summary>
         ///  Replies to a query with data.
         ///  The query handle is consumed by this operation.
+        ///  Call zenoh_last_error() for error details.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "zenoh_query_reply", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern ZenohError zenoh_query_reply(void* query, byte* key_expr, byte* payload, nuint payload_len);
@@ -356,6 +364,7 @@ namespace ZenohDotNet.Native.FFI
         InvalidKeyExpr = 3,
         PutFailed = 4,
         NullPointer = 5,
+        Panic = 254,
         Unknown = 255,
     }
 

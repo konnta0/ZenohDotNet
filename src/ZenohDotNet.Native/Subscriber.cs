@@ -47,7 +47,7 @@ namespace ZenohDotNet.Native
             if (_handle == null)
             {
                 _callbackHandle.Free();
-                throw new ZenohException($"Failed to declare subscriber for key expression: {keyExpr}");
+                throw ZenohException.FromLastError($"Failed to declare subscriber for key expression: {keyExpr}");
             }
         }
 
