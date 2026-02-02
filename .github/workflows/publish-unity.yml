@@ -62,6 +62,7 @@ jobs:
 
       - name: Package com.zenohdotnet.unity
         run: |
+          mkdir -p packages
           cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
           tar -czf ../../../../../packages/com.zenohdotnet.unity.tgz .
 
