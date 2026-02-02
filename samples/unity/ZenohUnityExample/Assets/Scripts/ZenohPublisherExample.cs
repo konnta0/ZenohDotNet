@@ -9,8 +9,9 @@ using System;
 public class ZenohPublisherExample : MonoBehaviour
 {
     [Header("Zenoh Configuration")]
+    [SerializeField] private string endpoint = "tcp/localhost:7447";
     [SerializeField] private string keyExpression = "unity/demo/position";
-    [SerializeField] private float publishInterval = 0.1f; // Publish every 100ms
+    [SerializeField] private float publishInterval = 0.016f; // Publish at ~60fps
 
     [Header("Status")]
     [SerializeField] private bool isConnected = false;
@@ -23,8 +24,11 @@ public class ZenohPublisherExample : MonoBehaviour
     {
         try
         {
-            Debug.Log("[Zenoh] Opening session...");
-            session = await Session.OpenAsync(this.GetCancellationTokenOnDestroy());
+            Debug.Log($"[Zenoh] Opening session to {endpoint}...");
+            var config = new ZenohDotNet.Native.SessionConfig()
+                .WithMode(ZenohDotNet.Native.SessionMode.Client)
+                .WithConnect(endpoint);
+            session = await Session.OpenAsync(config, this.GetCancellationTokenOnDestroy());
             isConnected = true;
             Debug.Log("[Zenoh] Session opened successfully!");
 
@@ -48,11 +52,14 @@ public class ZenohPublisherExample : MonoBehaviour
         {
             try
             {
-                // Publish transform position as JSON
-                var position = transform.position;
-                var data = $"{{\"x\":{position.x},\"y\":{position.y},\"z\":{position.z},\"count\":{messageCount}}}";
+                // Generate moving position using sine waves for demo
+                var time = Time.time;
+                var x = Mathf.Sin(time) * 5f;
+                var y = Mathf.Sin(time * 0.7f) * 3f;
+                var z = Mathf.Cos(time * 1.3f) * 4f;
+                var data = $"{{\"x\":{x:F3},\"y\":{y:F3},\"z\":{z:F3},\"count\":{messageCount}}}";
 
-                publisher.Put(data);
+                await publisher.PutAsync(data, cancellationToken);
                 messageCount++;
 
                 await UniTask.Delay(TimeSpan.FromSeconds(publishInterval), cancellationToken: cancellationToken);

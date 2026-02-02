@@ -10,6 +10,7 @@ using System.Collections.Generic;
 public class ZenohSubscriberExample : MonoBehaviour
 {
     [Header("Zenoh Configuration")]
+    [SerializeField] private string endpoint = "tcp/localhost:7447";
     [SerializeField] private string keyExpression = "unity/demo/**";
 
     [Header("Status")]
@@ -30,8 +31,11 @@ public class ZenohSubscriberExample : MonoBehaviour
     {
         try
         {
-            Debug.Log("[Zenoh] Opening session...");
-            session = await Session.OpenAsync(this.GetCancellationTokenOnDestroy());
+            Debug.Log($"[Zenoh] Opening session to {endpoint}...");
+            var config = new ZenohDotNet.Native.SessionConfig()
+                .WithMode(ZenohDotNet.Native.SessionMode.Client)
+                .WithConnect(endpoint);
+            session = await Session.OpenAsync(config, this.GetCancellationTokenOnDestroy());
             isConnected = true;
             Debug.Log("[Zenoh] Session opened successfully!");
 
