@@ -24,9 +24,53 @@ permissions:
   contents: write
 
 jobs:
+  # Build native libraries for all platforms (when not called from create-tags)
+  build-native:
+    name: Build Native ${{ matrix.rid }}
+    if: github.event_name != 'workflow_call'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            rid: win-x64
+            lib: zenoh_ffi.dll
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            rid: linux-x64
+            lib: libzenoh_ffi.so
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            rid: osx-x64
+            lib: libzenoh_ffi.dylib
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            rid: osx-arm64
+            lib: libzenoh_ffi.dylib
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        working-directory: native/zenoh-ffi
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.rid }}
+          path: native/zenoh-ffi/target/${{ matrix.target }}/release/${{ matrix.lib }}
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    needs: [build-native]
+    if: always() && (needs.build-native.result == 'success' || needs.build-native.result == 'skipped')
 
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +103,45 @@ jobs:
             git tag "$TAG"
             git push origin "$TAG"
           fi
+
+      - name: Download native artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: native-libs
+          merge-multiple: false
+
+      - name: Copy native libraries to Unity package
+        run: |
+          UNITY_PKG="src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity"
+          
+          # Windows x64
+          if [ -d "native-libs/native-win-x64" ]; then
+            mkdir -p "$UNITY_PKG/Plugins/Windows/x86_64"
+            cp native-libs/native-win-x64/*.dll "$UNITY_PKG/Plugins/Windows/x86_64/"
+          fi
+          
+          # Linux x64
+          if [ -d "native-libs/native-linux-x64" ]; then
+            mkdir -p "$UNITY_PKG/Plugins/Linux/x86_64"
+            cp native-libs/native-linux-x64/*.so "$UNITY_PKG/Plugins/Linux/x86_64/"
+          fi
+          
+          # macOS x64
+          if [ -d "native-libs/native-osx-x64" ]; then
+            mkdir -p "$UNITY_PKG/Plugins/macOS"
+            cp native-libs/native-osx-x64/*.dylib "$UNITY_PKG/Plugins/macOS/" || true
+          fi
+          
+          # macOS ARM64
+          if [ -d "native-libs/native-osx-arm64" ]; then
+            mkdir -p "$UNITY_PKG/Plugins/macOS"
+            cp native-libs/native-osx-arm64/*.dylib "$UNITY_PKG/Plugins/macOS/" || true
+          fi
+          
+          # List what we have
+          echo "=== Native libraries in Unity package ==="
+          find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"
 
       - name: Package com.zenohdotnet.unity
         run: |

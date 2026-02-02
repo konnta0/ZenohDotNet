@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 namespace ZenohDotNet.Unity.Editor
 {
@@ -35,21 +36,51 @@ namespace ZenohDotNet.Unity.Editor
         [MenuItem("Tools/Zenoh/Check Native Libraries")]
         private static void CheckNativeLibraries()
         {
-            bool hasWindows = System.IO.File.Exists("Assets/Plugins/x86_64/zenoh_ffi.dll");
-            bool hasLinux = System.IO.File.Exists("Assets/Plugins/x86_64/libzenoh_ffi.so");
-            bool hasMacOS = System.IO.File.Exists("Assets/Plugins/x86_64/libzenoh_ffi.bundle");
+            var status = new System.Text.StringBuilder();
+            status.AppendLine("Native Library Status:\n");
 
-            string message = "Native Library Status:\n\n";
-            message += $"Windows (x64): {(hasWindows ? "✓ Found" : "✗ Missing")}\n";
-            message += $"Linux (x64): {(hasLinux ? "✓ Found" : "✗ Missing")}\n";
-            message += $"macOS (x64): {(hasMacOS ? "✓ Found" : "✗ Missing")}\n\n";
-
-            if (!hasWindows && !hasLinux && !hasMacOS)
+            // Check in package location
+            var packagePath = GetPackagePath();
+            var checks = new[]
             {
-                message += "No native libraries found. Please install ZenohDotNet.Native via NuGet for Unity.";
+                ("Windows x64", $"{packagePath}/Plugins/Windows/x86_64/zenoh_ffi.dll"),
+                ("Linux x64", $"{packagePath}/Plugins/Linux/x86_64/libzenoh_ffi.so"),
+                ("macOS", $"{packagePath}/Plugins/macOS/libzenoh_ffi.dylib"),
+            };
+
+            int found = 0;
+            foreach (var (name, path) in checks)
+            {
+                bool exists = File.Exists(path);
+                if (exists) found++;
+                status.AppendLine($"{name}: {(exists ? "✓ Found" : "✗ Missing")}");
             }
 
-            EditorUtility.DisplayDialog("Zenoh Native Libraries", message, "OK");
+            status.AppendLine();
+            if (found == 0)
+            {
+                status.AppendLine("No native libraries found.\n");
+                status.AppendLine("If installed via UPM, native libraries should be included.");
+                status.AppendLine("For development, build with: cargo build --release");
+            }
+            else
+            {
+                status.AppendLine($"{found} of {checks.Length} desktop platforms available.");
+            }
+
+            EditorUtility.DisplayDialog("Zenoh Native Libraries", status.ToString(), "OK");
+        }
+
+        private static string GetPackagePath()
+        {
+            // Try to find the package path
+            var guids = AssetDatabase.FindAssets("t:asmdef ZenohDotNet.Unity.Runtime");
+            if (guids.Length > 0)
+            {
+                var asmdefPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                return Path.GetDirectoryName(Path.GetDirectoryName(asmdefPath));
+            }
+            return "Packages/com.zenohdotnet.unity";
         }
     }
 }
