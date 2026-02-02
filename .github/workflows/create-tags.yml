@@ -1,6 +1,6 @@
 name: Create Release Tags
 
-# When v* is pushed, create individual package tags
+# When v* is pushed, create individual package tags and trigger publish workflows
 # This allows tracking each package version independently
 
 on:
@@ -24,6 +24,8 @@ jobs:
   create-tags:
     name: Create Package Tags
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,3 +67,28 @@ jobs:
           else
             git push origin --tags
           fi
+
+  publish-client:
+    name: Publish Client
+    needs: create-tags
+    uses: ./.github/workflows/publish-client.yml
+    with:
+      version: ${{ needs.create-tags.outputs.version }}
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+  publish-native:
+    name: Publish Native
+    needs: create-tags
+    uses: ./.github/workflows/publish-native.yml
+    with:
+      version: ${{ needs.create-tags.outputs.version }}
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+  publish-unity:
+    name: Publish Unity
+    needs: create-tags
+    uses: ./.github/workflows/publish-unity.yml
+    with:
+      version: ${{ needs.create-tags.outputs.version }}

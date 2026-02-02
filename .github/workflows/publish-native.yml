@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'native/v*'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: true
+        type: string
+    secrets:
+      NUGET_API_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       version:
@@ -13,6 +22,9 @@ on:
         description: 'Force overwrite existing release'
         type: boolean
         default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -109,7 +121,10 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_call" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "tag=native/v${{ inputs.version }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "tag=native/v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
