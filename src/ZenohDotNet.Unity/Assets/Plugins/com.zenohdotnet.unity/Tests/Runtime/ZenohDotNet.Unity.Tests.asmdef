@@ -4,7 +4,6 @@
     "references": [
         "UniTask",
         "ZenohDotNet.Unity",
-        "ZenohDotNet.Native",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
@@ -13,7 +12,8 @@
     "allowUnsafeCode": true,
     "overrideReferences": true,
     "precompiledReferences": [
-        "nunit.framework.dll"
+        "nunit.framework.dll",
+        "ZenohDotNet.Native.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [

@@ -28,7 +28,7 @@ namespace ZenohDotNet.Unity
         /// <param name="config">The session configuration.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>A UniTask representing the async operation, containing the Session.</returns>
-        public static async UniTask<Session> OpenAsync(SessionConfig config, CancellationToken cancellationToken = default)
+        public static async UniTask<Session> OpenAsync(ZenohDotNet.Native.SessionConfig config, CancellationToken cancellationToken = default)
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
