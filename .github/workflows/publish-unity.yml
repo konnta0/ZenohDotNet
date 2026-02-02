@@ -143,6 +143,18 @@ jobs:
           echo "=== Native libraries in Unity package ==="
           find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"
 
+      - name: Update package.json version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          UNITY_PKG="src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity"
+          
+          # Update version in package.json
+          jq --arg v "$VERSION" '.version = $v' "$UNITY_PKG/package.json" > tmp.json
+          mv tmp.json "$UNITY_PKG/package.json"
+          
+          echo "Updated package.json version to $VERSION"
+          cat "$UNITY_PKG/package.json"
+
       - name: Package com.zenohdotnet.unity
         run: |
           mkdir -p packages
@@ -168,3 +180,25 @@ jobs:
           name: Unity ${{ steps.version.outputs.version }}
           files: packages/*.tgz
           generate_release_notes: true
+
+      - name: Update upm branch
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          UNITY_PKG="src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity"
+          
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Create orphan branch with package contents
+          cd "$UNITY_PKG"
+          git init
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git checkout -b upm
+          git add -A
+          git commit -m "Release $VERSION"
+          
+          # Push branch and create version tag
+          git push -f origin upm
+          git tag "upm/v$VERSION"
+          git push origin "upm/v$VERSION" --force
