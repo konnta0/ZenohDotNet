@@ -110,13 +110,14 @@ jobs:
       - name: Pack
         run: |
           dotnet restore ZenohDotNet.slnx
-          dotnet pack src/ZenohDotNet.Native -c Release -o packages
+          dotnet build src/ZenohDotNet.Native -c Release --no-restore
+          dotnet pack src/ZenohDotNet.Native -c Release -o nupkgs --no-build
 
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
           name: nuget-native
-          path: packages/*.nupkg
+          path: nupkgs/*.nupkg
 
       - name: Extract version
         id: version
@@ -148,7 +149,7 @@ jobs:
           fi
 
       - name: Publish to NuGet
-        run: dotnet nuget push packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
@@ -163,5 +164,5 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Native ${{ steps.version.outputs.version }}
-          files: packages/*.nupkg
+          files: nupkgs/*.nupkg
           generate_release_notes: true
