@@ -1,6 +1,6 @@
 {
   "name": "com.zenohdotnet.unity",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "displayName": "ZenohDotNet for Unity",
   "license": "MIT",
   "description": "Community-maintained Zenoh .NET bindings for Unity with UniTask support. Requires ZenohDotNet.Native NuGet package (install via NuGetForUnity).",
