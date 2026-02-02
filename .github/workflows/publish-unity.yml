@@ -186,15 +186,15 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           UNITY_PKG="src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity"
           
-          # Configure git
+          # Create orphan branch with package contents
+          cd "$UNITY_PKG"
+          git init -b upm
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          
+          # Configure git (after init, so it applies to the new repo)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create orphan branch with package contents
-          cd "$UNITY_PKG"
-          git init
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git checkout -b upm
           git add -A
           git commit -m "Release $VERSION"
           
