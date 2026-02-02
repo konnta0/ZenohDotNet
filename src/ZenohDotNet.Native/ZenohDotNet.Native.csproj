@@ -88,10 +88,10 @@
     </None>
   </ItemGroup>
 
-  <!-- Sync source files and native libraries to Unity package after build -->
-  <Target Name="SyncToUnityPackage" AfterTargets="Build">
+  <!-- Sync source files to Unity package for local development (skipped in CI) -->
+  <Target Name="SyncToUnityPackage" AfterTargets="Build" Condition="'$(CI)' != 'true'">
     <PropertyGroup>
-      <UnityPackagePath>$(MSBuildProjectDirectory)/../../packages/com.zenohdotnet.native</UnityPackagePath>
+      <UnityPackagePath>$(MSBuildProjectDirectory)/../../src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity</UnityPackagePath>
       <NativeBuildPath>$(MSBuildProjectDirectory)/../../native/zenoh-ffi/target/debug</NativeBuildPath>
     </PropertyGroup>
     
@@ -102,7 +102,7 @@
     
     <MakeDir Directories="$(UnityPackagePath)/Runtime" Condition="!Exists('$(UnityPackagePath)/Runtime')" />
     <Copy SourceFiles="@(SourceFilesToCopy)" DestinationFolder="$(UnityPackagePath)/Runtime" SkipUnchangedFiles="true" />
-    <Message Importance="high" Text="Synced source files to Unity package" />
+    <Message Importance="high" Text="Synced source files to Unity package (local dev)" />
     
     <!-- Native libraries (copy if exists) -->
     <MakeDir Directories="$(UnityPackagePath)/Plugins/macOS" Condition="!Exists('$(UnityPackagePath)/Plugins/macOS')" />

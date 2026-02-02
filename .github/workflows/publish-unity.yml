@@ -60,11 +60,6 @@ jobs:
             git push origin "$TAG"
           fi
 
-      - name: Package com.zenohdotnet.native
-        run: |
-          cd packages/com.zenohdotnet.native
-          tar -czf ../com.zenohdotnet.native.tgz .
-
       - name: Package com.zenohdotnet.unity
         run: |
           cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity

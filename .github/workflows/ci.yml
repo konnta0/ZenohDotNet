@@ -102,24 +102,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Build to sync Unity package
-        run: dotnet build src/ZenohDotNet.Native -c Release
-
       - name: Validate packages
         run: |
-          echo "=== com.zenohdotnet.native ==="
-          cd packages/com.zenohdotnet.native
-          jq -e '.name == "com.zenohdotnet.native"' package.json > /dev/null
-          test -f Runtime/Session.cs && test -f Runtime/NativeMethods.g.cs
-          echo "✓ Valid"
-          
           echo "=== com.zenohdotnet.unity ==="
-          cd ../../src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
+          cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
           jq -e '.name == "com.zenohdotnet.unity"' package.json > /dev/null
           echo "✓ Valid"
 
