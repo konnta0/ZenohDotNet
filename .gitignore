@@ -548,9 +548,7 @@ Thumbs.db
 !/packages/
 !/packages/**
 
-# Unity package - synced files for local development (not tracked)
-src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Runtime/*.cs
-src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Runtime/*.cs.meta
+# Unity package - native plugins (not tracked, installed via NuGet)
 src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Plugins/**/*.dylib
 src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Plugins/**/*.dll
 src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/Plugins/**/*.so
