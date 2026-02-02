@@ -4,11 +4,11 @@ Low-level Zenoh FFI bindings for .NET with embedded runtime.
 
 ## Overview
 
-ZenohDotNet.Native provides P/Invoke bindings to the Zenoh C library, allowing .NET applications to use Zenoh's distributed messaging capabilities. The native Zenoh runtime is embedded in the NuGet package, so no separate installation is required.
+ZenohDotNet.Native provides P/Invoke bindings to the Zenoh native library (zenoh-ffi), allowing .NET applications to use Zenoh's distributed messaging capabilities. The native Zenoh runtime is embedded in the NuGet package, so no separate installation is required.
 
 ## Features
 
-- **Embedded Runtime**: Zenoh C library is included in the package
+- **Embedded Runtime**: Zenoh native library is included in the package
 - **Cross-Platform**: Supports Windows, Linux, and macOS on x64 and ARM64
 - **Mobile Support**: Android (arm64-v8a, armeabi-v7a, x86_64) and iOS (arm64)
 - **Memory Safe**: Proper IDisposable implementation for resource management
