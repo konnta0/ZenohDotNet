@@ -1,0 +1,109 @@
+name: Unity Build Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_name:
+        description: 'Build name'
+        required: false
+        default: 'ZenohUnityExample'
+
+env:
+  UNITY_VERSION: 2022.3.22f1
+  PROJECT_PATH: samples/unity/ZenohUnityExample
+
+jobs:
+  check-license:
+    name: Check License
+    runs-on: ubuntu-latest
+    outputs:
+      has_license: ${{ steps.check.outputs.has_license }}
+    steps:
+      - name: Check if license exists
+        id: check
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "has_license=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_license=true" >> $GITHUB_OUTPUT
+          fi
+
+  # Generate activation file when license is not configured
+  request-activation:
+    name: Request Activation File
+    needs: check-license
+    if: needs.check-license.outputs.has_license == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request manual activation file
+        uses: game-ci/unity-request-activation-file@v2
+        id: getManualLicenseFile
+
+      - name: Upload activation file
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unity_v2022.x.alf
+          path: ${{ steps.getManualLicenseFile.outputs.filePath }}
+          retention-days: 7
+
+      - name: Show activation instructions
+        run: |
+          echo "::error::UNITY_LICENSE Secret is not configured"
+          echo ""
+          echo "=== Setup Instructions ==="
+          echo "1. Download the .alf file from this workflow's Artifacts"
+          echo "2. Visit https://license.unity3d.com/manual"
+          echo "3. Upload the .alf file and select Personal license"
+          echo "4. Copy the contents of the downloaded .ulf file"
+          echo "5. Go to GitHub repo Settings > Secrets > Actions and create UNITY_LICENSE"
+          echo "6. Paste the .ulf contents as the Secret value"
+          echo "7. Re-run this workflow"
+          exit 1
+
+  # Build when license is configured
+  build:
+    name: Build for Windows
+    needs: check-license
+    if: needs.check-license.outputs.has_license == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PROJECT_PATH }}/Library
+          key: Library-ZenohUnityExample-Windows-${{ hashFiles('samples/unity/ZenohUnityExample/Assets/**', 'samples/unity/ZenohUnityExample/Packages/**', 'samples/unity/ZenohUnityExample/ProjectSettings/**') }}
+          restore-keys: |
+            Library-ZenohUnityExample-Windows-
+            Library-ZenohUnityExample-
+
+      - name: Build Unity Project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          projectPath: ${{ env.PROJECT_PATH }}
+          targetPlatform: StandaloneWindows64
+          buildName: ${{ inputs.build_name || 'ZenohUnityExample' }}
+          versioning: None
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZenohUnityExample-Windows-${{ github.run_number }}
+          path: build/StandaloneWindows64
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Log-${{ github.run_number }}
+          path: ${{ env.PROJECT_PATH }}/Logs
+          retention-days: 7
