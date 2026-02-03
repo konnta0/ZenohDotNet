@@ -1,0 +1,19 @@
+{
+    "name": "ZenohDotNet.Unity.Editor",
+    "rootNamespace": "ZenohDotNet.Unity.Editor",
+    "references": [
+        "ZenohDotNet.Unity",
+        "ZenohDotNet.Native"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

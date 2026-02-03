@@ -1,0 +1,37 @@
+{
+  "name": "com.zenohdotnet.unity",
+  "version": "0.1.5",
+  "displayName": "ZenohDotNet for Unity",
+  "license": "MIT",
+  "description": "Community-maintained Zenoh .NET bindings for Unity with UniTask support. Native binaries included.",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "keywords": [
+    "zenoh",
+    "messaging",
+    "pubsub",
+    "networking",
+    "distributed",
+    "iot",
+    "robotics",
+    "unitask"
+  ],
+  "author": {
+    "name": "konnta0",
+    "url": "https://github.com/konnta0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konnta0/ZenohDotNet.git"
+  },
+  "dependencies": {
+    "com.cysharp.unitask": "2.5.4"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Pub/Sub",
+      "description": "Simple publisher and subscriber example",
+      "path": "Samples~/BasicPubSub"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+    "name": "ZenohDotNet.Unity",
+    "rootNamespace": "ZenohDotNet.Unity",
+    "references": [
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "ZenohDotNet.Native.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
