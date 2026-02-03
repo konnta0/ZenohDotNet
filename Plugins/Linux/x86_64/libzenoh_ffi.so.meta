@@ -1,0 +1,34 @@
+fileFormatVersion: 2
+guid: 7e9b7815d90b33f9e8006f9b46545a26
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  iconMap: {}
+  executionOrder: {}
+  defineConstraints: []
+  isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
+  platformData:
+  - first:
+      Any: 
+    second:
+      enabled: 0
+      settings: {}
+  - first:
+      Editor: Linux64
+    second:
+      enabled: 1
+      settings:
+        CPU: x86_64
+        DefaultValueInitialized: true
+  - first:
+      Standalone: Linux64
+    second:
+      enabled: 1
+      settings:
+        CPU: x86_64
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
