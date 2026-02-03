@@ -88,7 +88,7 @@ jobs:
 
   publish-unity:
     name: Publish Unity
-    needs: [create-tags, publish-native]
+    needs: [create-tags]
     uses: ./.github/workflows/publish-unity.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
