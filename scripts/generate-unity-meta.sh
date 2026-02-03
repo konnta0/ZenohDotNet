@@ -126,6 +126,50 @@ PluginImporter:
 METAEOF
 }
 
+generate_plugin_meta_ios() {
+    local file="$1"
+    local guid=$(echo -n "$file" | md5sum | cut -d' ' -f1)
+    
+    cat > "${file}.meta" << METAEOF
+fileFormatVersion: 2
+guid: ${guid}
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  iconMap: {}
+  executionOrder: {}
+  defineConstraints: []
+  isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
+  platformData:
+  - first:
+      Any: 
+    second:
+      enabled: 0
+      settings: {}
+  - first:
+      Editor: Editor
+    second:
+      enabled: 0
+      settings:
+        DefaultValueInitialized: true
+  - first:
+      iPhone: iOS
+    second:
+      enabled: 1
+      settings:
+        AddToEmbeddedBinaries: false
+        CPU: ARM64
+        CompileFlags: 
+        FrameworkDependencies: 
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+METAEOF
+}
+
 generate_folder_meta() {
     local folder="$1"
     local guid=$(echo -n "$folder" | md5sum | cut -d' ' -f1)
@@ -208,6 +252,23 @@ if [ -d "$NATIVE_LIBS/unity-native-osx-x64" ] || [ -d "$NATIVE_LIBS/unity-native
             generate_plugin_meta_macos "$f"
         fi
     done
+fi
+
+# iOS (ARM64 - static library)
+if [ -d "$NATIVE_LIBS/unity-native-ios-arm64" ]; then
+    mkdir -p "$UNITY_PKG/Plugins/iOS"
+    generate_folder_meta "$UNITY_PKG/Plugins/iOS"
+    # Rename libzenoh_ffi.a to zenoh_ffi.a (Unity expects no lib prefix)
+    for src in "$NATIVE_LIBS/unity-native-ios-arm64"/*.a; do
+        dst="$UNITY_PKG/Plugins/iOS/$(basename "$src" | sed 's/^lib//')"
+        cp "$src" "$dst"
+    done
+    for f in "$UNITY_PKG/Plugins/iOS"/*.a; do
+        if [ -f "$f" ]; then
+            generate_plugin_meta_ios "$f"
+        fi
+    done
+    echo "Copied iOS ARM64 native library"
 fi
 
 # List what we have

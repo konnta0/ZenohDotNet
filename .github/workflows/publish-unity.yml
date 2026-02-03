@@ -47,6 +47,10 @@ jobs:
             target: aarch64-apple-darwin
             rid: osx-arm64
             lib: libzenoh_ffi.dylib
+          - os: macos-latest
+            target: aarch64-apple-ios
+            rid: ios-arm64
+            lib: libzenoh_ffi.a
 
     steps:
       - uses: actions/checkout@v4
