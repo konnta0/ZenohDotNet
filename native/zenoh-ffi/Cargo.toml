@@ -11,7 +11,7 @@ crate-type = ["cdylib", "staticlib"]
 name = "zenoh_ffi"
 
 [dependencies]
-zenoh = { version = "1.0.3", features = ["unstable"] }
+zenoh = { version = "=1.7.2", features = ["unstable"] }
 tokio = { version = "1.41", features = ["full"] }
 serde_json = "1.0"
 libc = "0.2"

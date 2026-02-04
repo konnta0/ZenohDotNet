@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>ZenohDotNet.Native</id>
+    <version>0.1.0</version>
+    <authors>konnta0</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <readme>README.md</readme>
+    <projectUrl>https://github.com/konnta0/ZenohDotNet</projectUrl>
+    <description>MIT-licensed Zenoh .NET/Unity FFI bindings with embedded native runtime. Bundles Zenoh native binaries licensed under Apache-2.0.</description>
+    <copyright>Copyright © 2026 konnta0</copyright>
+    <tags>zenoh messaging pubsub distributed iot robotics ffi unity</tags>
+    <repository type="git" url="https://github.com/konnta0/ZenohDotNet" commit="dc84b2f6c68fffe81ecc14954706cbf29c3da46a" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.1" />
+    </dependencies>
+  </metadata>
+</package>

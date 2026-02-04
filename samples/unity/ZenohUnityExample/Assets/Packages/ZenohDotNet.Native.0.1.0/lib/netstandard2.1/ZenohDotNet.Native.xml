@@ -1,0 +1,869 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ZenohDotNet.Native</name>
+    </assembly>
+    <members>
+        <member name="T:ZenohDotNet.Native.BufferPool">
+            <summary>
+            Provides buffer pooling utilities for reducing allocations in hot paths.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.BufferPool.Rent(System.Int32)">
+            <summary>
+            Rents a buffer from the pool.
+            </summary>
+            <param name="minimumLength">The minimum required length.</param>
+            <returns>A rented buffer (may be larger than requested).</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.BufferPool.Return(System.Byte[],System.Boolean)">
+            <summary>
+            Returns a buffer to the pool.
+            </summary>
+            <param name="buffer">The buffer to return.</param>
+            <param name="clearArray">Whether to clear the buffer before returning.</param>
+        </member>
+        <member name="T:ZenohDotNet.Native.Utf8Helper">
+            <summary>
+            Provides optimized UTF-8 encoding utilities.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Utf8Helper.GetNullTerminatedByteCount(System.String)">
+            <summary>
+            Gets the byte count for a string when encoded as null-terminated UTF-8.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Utf8Helper.EncodeToPooledBuffer(System.String)">
+            <summary>
+            Encodes a string to a pooled buffer as null-terminated UTF-8.
+            Returns the actual bytes written (including null terminator).
+            Caller must return the buffer to the pool.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Utf8Helper.EncodeToSpan(System.String,System.Span{System.Byte},System.Boolean)">
+            <summary>
+            Encodes a string directly into a provided span.
+            Returns the number of bytes written (excluding null terminator if not requested).
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.RentedBuffer">
+            <summary>
+            A disposable wrapper for a rented buffer that returns it to the pool on dispose.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.LivelinessSubscriber">
+            <summary>
+            Represents a Zenoh liveliness subscriber.
+            Receives notifications when liveliness tokens are created or dropped.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.LivelinessSubscriber.KeyExpression">
+            <summary>
+            Gets the key expression this subscriber is bound to.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.LivelinessToken">
+            <summary>
+            Represents a Zenoh liveliness token.
+            A liveliness token signals that a resource is alive.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.LivelinessToken.KeyExpression">
+            <summary>
+            Gets the key expression this token is bound to.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_last_error">
+            <summary>
+             Gets the last error message.
+             Returns NULL if no error occurred.
+             The returned string is valid until the next FFI call on the same thread.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_open(System.Byte*)">
+            <summary>
+             Opens a Zenoh session with the given configuration (JSON5 string).
+             Pass NULL or empty string for default configuration.
+             Returns a pointer on success, NULL on failure.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_close(System.Void*)">
+            <summary>
+             Closes a Zenoh session and frees all associated resources.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_publisher(System.Void*,System.Byte*)">
+            <summary>
+             Declares a publisher on the given key expression.
+             Returns a pointer on success, NULL on failure.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_publisher_put(System.Void*,System.Byte*,System.UIntPtr)">
+            <summary>
+             Publishes data on the given publisher.
+             Returns ZenohError code.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_undeclare_publisher(System.Void*)">
+            <summary>
+             Undeclares and frees a publisher.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_subscriber(System.Void*,System.Byte*,ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_subscriber_callback_delegate,System.Void*)">
+            <summary>
+             Declares a subscriber on the given key expression with a callback.
+             Returns a pointer on success, NULL on failure.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_undeclare_subscriber(System.Void*)">
+            <summary>
+             Undeclares and frees a subscriber.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_free_string(System.Byte*)">
+            <summary>
+             Frees a string allocated by the Zenoh FFI.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_get(System.Void*,System.Byte*,ZenohDotNet.Native.FFI.NativeMethods.zenoh_get_callback_delegate,System.Void*)">
+            <summary>
+             Performs a get query (request-response pattern).
+             Returns 0 on success, error code on failure.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_queryable(System.Void*,System.Byte*,ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_queryable_callback_delegate,System.Void*)">
+            <summary>
+             Declares a queryable that responds to get queries.
+             Returns a pointer on success, NULL on failure.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_query_reply(System.Void*,System.Byte*,System.Byte*,System.UIntPtr)">
+            <summary>
+             Replies to a query with data.
+             The query handle is consumed by this operation.
+             Call zenoh_last_error() for error details.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_query_selector(System.Void*)">
+            <summary>
+             Gets the selector (key expression) of a query.
+             Returns a C string that must be freed with zenoh_free_string.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_undeclare_queryable(System.Void*)">
+            <summary>
+             Undeclares and frees a queryable.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_publisher_options_default">
+            <summary>
+             Creates default publisher options
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_publisher_with_options(System.Void*,System.Byte*,ZenohDotNet.Native.FFI.PublisherOptions*)">
+            <summary>
+             Declares a publisher with options.
+             Returns a pointer on success, NULL on failure.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_delete(System.Void*,System.Byte*)">
+            <summary>
+             Deletes data for a key expression.
+             Returns ZenohError code.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_publisher_delete(System.Void*)">
+            <summary>
+             Deletes data using a publisher.
+             Returns ZenohError code.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_put(System.Void*,System.Byte*,System.Byte*,System.UIntPtr)">
+            <summary>
+             Put data directly on a session (without declaring a publisher).
+             Returns ZenohError code.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_liveliness_declare_token(System.Void*,System.Byte*)">
+            <summary>
+             Declares a liveliness token for the given key expression.
+             Returns a pointer on success, NULL on failure.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_liveliness_undeclare_token(System.Void*)">
+            <summary>
+             Undeclares and frees a liveliness token.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_liveliness_declare_subscriber(System.Void*,System.Byte*,ZenohDotNet.Native.FFI.NativeMethods.zenoh_liveliness_declare_subscriber_callback_delegate,System.Void*)">
+            <summary>
+             Declares a liveliness subscriber.
+             The callback receives (key_expr, is_alive, context).
+             Returns a pointer on success, NULL on failure.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_session_zid(System.Void*)">
+            <summary>
+             Gets the Zenoh ID of the session as a hex string.
+             Returns a C string that must be freed with zenoh_free_string.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_publisher_put_with_encoding(System.Void*,System.Byte*,System.UIntPtr,ZenohDotNet.Native.FFI.ZenohEncodingId)">
+            <summary>
+             Publishes data with encoding on the given publisher.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_put_with_encoding(System.Void*,System.Byte*,System.Byte*,System.UIntPtr,ZenohDotNet.Native.FFI.ZenohEncodingId)">
+            <summary>
+             Puts data directly on a key expression with encoding.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_put_with_attachment(System.Void*,System.Byte*,System.Byte*,System.UIntPtr,ZenohDotNet.Native.FFI.ZenohAttachmentItem*,System.UIntPtr)">
+            <summary>
+             Puts data with attachment on a key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_declare_querier(System.Void*,System.Byte*)">
+            <summary>
+             Declares a querier for repeated queries on the same key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_querier_get(System.Void*,ZenohDotNet.Native.FFI.NativeMethods.zenoh_querier_get_callback_delegate,System.Void*)">
+            <summary>
+             Performs a get query using the querier.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.FFI.NativeMethods.zenoh_undeclare_querier(System.Void*)">
+            <summary>
+             Undeclares and frees a querier.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.PublisherOptions">
+            <summary>
+             Publisher options
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohTimestamp">
+            <summary>
+             Timestamp structure
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.FFI.ZenohTimestamp.time_ntp64">
+            <summary>
+             NTP64 timestamp (seconds since epoch in upper 32 bits, fraction in lower 32 bits)
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.FFI.ZenohTimestamp.id">
+            <summary>
+             Unique ID of the timestamp source (first 16 bytes of ZenohId)
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohAttachmentItem">
+            <summary>
+             Attachment key-value pair
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.SampleData">
+            <summary>
+             Sample data structure passed to subscriber callbacks
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohCongestionControl">
+            <summary>
+             Congestion control strategy
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.FFI.ZenohCongestionControl.Block">
+            <summary>
+             Block if the buffer is full
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.FFI.ZenohCongestionControl.Drop">
+            <summary>
+             Drop the message if the buffer is full
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohPriority">
+            <summary>
+             Priority of messages
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohSampleKind">
+            <summary>
+             Sample kind (Put or Delete)
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohEncodingId">
+            <summary>
+             Encoding ID for payload
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.FFI.ZenohError">
+            <summary>
+             Error codes
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Publisher">
+            <summary>
+            Represents a Zenoh publisher that can publish data on a key expression.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Publisher.KeyExpression">
+            <summary>
+            Gets the key expression this publisher is bound to.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Put(System.Byte[])">
+            <summary>
+            Publishes a byte array.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Put(System.ReadOnlySpan{System.Byte})">
+            <summary>
+            Publishes data from a ReadOnlySpan (zero-copy when possible).
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Put(System.String)">
+            <summary>
+            Publishes a string as UTF-8 encoded bytes.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Put(System.Byte[],ZenohDotNet.Native.PayloadEncoding)">
+            <summary>
+            Publishes data with encoding.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Put(System.String,ZenohDotNet.Native.PayloadEncoding)">
+            <summary>
+            Publishes a string with encoding.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Publisher.Delete">
+            <summary>
+            Sends a delete operation for the key expression.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.CongestionControl">
+            <summary>
+            Congestion control strategy for publishers.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.CongestionControl.Block">
+            <summary>
+            Block if the buffer is full.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.CongestionControl.Drop">
+            <summary>
+            Drop the message if the buffer is full.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Priority">
+            <summary>
+            Priority of messages.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.RealTime">
+            <summary>
+            Real-time priority (highest).
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.InteractiveHigh">
+            <summary>
+            Interactive high priority.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.InteractiveLow">
+            <summary>
+            Interactive low priority.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.DataHigh">
+            <summary>
+            Data high priority.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.Data">
+            <summary>
+            Data priority (default).
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.DataLow">
+            <summary>
+            Data low priority.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.Priority.Background">
+            <summary>
+            Background priority (lowest).
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.PublisherOptions">
+            <summary>
+            Options for configuring a publisher.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.PublisherOptions.CongestionControl">
+            <summary>
+            Gets or sets the congestion control strategy.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.PublisherOptions.Priority">
+            <summary>
+            Gets or sets the message priority.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.PublisherOptions.IsExpress">
+            <summary>
+            Gets or sets whether express mode is enabled (lower latency, less reliable).
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.PublisherOptions.#ctor">
+            <summary>
+            Creates a new instance with default values.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Querier">
+            <summary>
+            Represents a Zenoh querier for repeated queries on the same key expression.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Querier.KeyExpression">
+            <summary>
+            Gets the key expression this querier is bound to.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Querier.Get(System.Action{ZenohDotNet.Native.Sample})">
+            <summary>
+            Performs a get query and invokes the callback for each reply.
+            </summary>
+            <param name="callback">Callback invoked for each reply sample.</param>
+        </member>
+        <member name="M:ZenohDotNet.Native.Querier.Dispose">
+            <summary>
+            Disposes the querier and releases all resources.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Queryable">
+            <summary>
+            Represents a Zenoh queryable that responds to get queries.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Queryable.KeyExpression">
+            <summary>
+            Gets the key expression this queryable is listening on.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Query">
+            <summary>
+            Represents a query received by a queryable.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Query.Selector">
+            <summary>
+            Gets the selector (key expression) of the query.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Query.Reply(System.String,System.Byte[])">
+            <summary>
+            Replies to the query with data.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Query.Reply(System.String,System.String)">
+            <summary>
+            Replies to the query with a string.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.SampleKind">
+            <summary>
+            Indicates the kind of a sample (Put or Delete).
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.SampleKind.Put">
+            <summary>
+            A put operation.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.SampleKind.Delete">
+            <summary>
+            A delete operation.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.PayloadEncoding">
+            <summary>
+            Encoding type for payloads.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Timestamp">
+            <summary>
+            Represents a Zenoh timestamp.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Timestamp.TimeNtp64">
+            <summary>
+            NTP64 time (seconds since epoch in upper 32 bits, fraction in lower 32 bits).
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Timestamp.Id">
+            <summary>
+            Unique ID of the timestamp source.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Timestamp.AsDateTime">
+            <summary>
+            Gets the timestamp as a DateTime (approximate, UTC).
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Sample">
+            <summary>
+            Represents a sample received from a Zenoh subscriber.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.KeyExpression">
+            <summary>
+            Gets the key expression of this sample.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.Payload">
+            <summary>
+            Gets the raw payload data.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.Kind">
+            <summary>
+            Gets the kind of this sample (Put or Delete).
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.Encoding">
+            <summary>
+            Gets the encoding of this sample.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.HasTimestamp">
+            <summary>
+            Gets whether this sample has a valid timestamp.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Sample.Timestamp">
+            <summary>
+            Gets the timestamp of this sample (if available).
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Sample.#ctor(System.String,System.Byte[],ZenohDotNet.Native.SampleKind)">
+            <summary>
+            Initializes a new instance of the Sample class.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Sample.#ctor(System.String,System.Byte[],ZenohDotNet.Native.SampleKind,ZenohDotNet.Native.PayloadEncoding,System.Nullable{ZenohDotNet.Native.Timestamp})">
+            <summary>
+            Initializes a new instance of the Sample class with encoding and timestamp.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Sample.GetPayloadAsString">
+            <summary>
+            Gets the payload as a UTF-8 encoded string.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Sample.ToString">
+            <summary>
+            Returns a string representation of this sample.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.Session">
+            <summary>
+            Represents a Zenoh session. This is the entry point for all Zenoh operations.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Session.Handle">
+            <summary>
+            Gets the native handle for this session.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.#ctor">
+            <summary>
+            Opens a new Zenoh session with default configuration.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.#ctor(ZenohDotNet.Native.SessionConfig)">
+            <summary>
+            Opens a new Zenoh session with the specified configuration.
+            </summary>
+            <param name="config">The session configuration.</param>
+            <exception cref="T:ZenohDotNet.Native.ZenohException">Thrown when the session cannot be created.</exception>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.#ctor(System.String)">
+            <summary>
+            Opens a new Zenoh session with the specified JSON configuration.
+            </summary>
+            <param name="configJson">JSON configuration string, or null for default configuration.</param>
+            <exception cref="T:ZenohDotNet.Native.ZenohException">Thrown when the session cannot be created.</exception>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclarePublisher(System.String)">
+            <summary>
+            Creates a new publisher for the specified key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclarePublisher(System.String,ZenohDotNet.Native.PublisherOptions)">
+            <summary>
+            Creates a new publisher for the specified key expression with options.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Put(System.String,System.Byte[])">
+            <summary>
+            Puts data directly on the session (without declaring a publisher).
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Put(System.String,System.String)">
+            <summary>
+            Puts a string directly on the session.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Delete(System.String)">
+            <summary>
+            Deletes data for a key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Put(System.String,System.Byte[],ZenohDotNet.Native.PayloadEncoding)">
+            <summary>
+            Puts data with encoding on a key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Put(System.String,System.String,ZenohDotNet.Native.PayloadEncoding)">
+            <summary>
+            Puts a string with encoding on a key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Put(System.String,System.Byte[],System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Puts data with attachment on a key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclareQuerier(System.String)">
+            <summary>
+            Declares a querier for repeated queries on the same key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclareLivelinessToken(System.String)">
+            <summary>
+            Declares a liveliness token for the given key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclareLivelinessSubscriber(System.String,System.Action{System.String,System.Boolean})">
+            <summary>
+            Declares a liveliness subscriber for the given key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.GetZenohId">
+            <summary>
+            Gets the Zenoh ID of this session.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclareSubscriber(System.String,System.Action{ZenohDotNet.Native.Sample})">
+            <summary>
+            Creates a new subscriber for the specified key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.DeclareQueryable(System.String,System.Action{ZenohDotNet.Native.Query})">
+            <summary>
+            Creates a new queryable for the specified key expression.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.Session.Get(System.String,System.Action{ZenohDotNet.Native.Sample})">
+            <summary>
+            Performs a get query (request-response pattern).
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.SessionMode">
+            <summary>
+            Zenoh session mode.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.SessionMode.Peer">
+            <summary>
+            Peer mode - connects to other peers and routers.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.SessionMode.Client">
+            <summary>
+            Client mode - connects only to routers.
+            </summary>
+        </member>
+        <member name="F:ZenohDotNet.Native.SessionMode.Router">
+            <summary>
+            Router mode - acts as a router for other peers and clients.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.SessionConfig">
+            <summary>
+            Type-safe configuration builder for Zenoh sessions.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.#ctor">
+            <summary>
+            Creates a new default configuration.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithMode(ZenohDotNet.Native.SessionMode)">
+            <summary>
+            Sets the session mode.
+            </summary>
+            <param name="mode">The session mode (Peer, Client, or Router).</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithConnect(System.String)">
+            <summary>
+            Adds an endpoint to connect to.
+            </summary>
+            <param name="endpoint">The endpoint URI (e.g., "tcp/192.168.1.1:7447").</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithConnect(System.String[])">
+            <summary>
+            Adds multiple endpoints to connect to.
+            </summary>
+            <param name="endpoints">The endpoint URIs.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithListen(System.String)">
+            <summary>
+            Adds an endpoint to listen on.
+            </summary>
+            <param name="endpoint">The endpoint URI (e.g., "tcp/0.0.0.0:7447").</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithListen(System.String[])">
+            <summary>
+            Adds multiple endpoints to listen on.
+            </summary>
+            <param name="endpoints">The endpoint URIs.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithMulticastScouting(System.Boolean)">
+            <summary>
+            Enables or disables multicast scouting for peer discovery.
+            </summary>
+            <param name="enabled">True to enable multicast scouting, false to disable.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithMulticastInterface(System.String)">
+            <summary>
+            Sets the network interface for multicast scouting.
+            </summary>
+            <param name="interfaceName">The network interface name (e.g., "eth0").</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithMulticastAddress(System.String)">
+            <summary>
+            Sets the multicast address for scouting.
+            </summary>
+            <param name="address">The multicast IPv4 address.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithScoutingTimeout(System.Int32)">
+            <summary>
+            Sets the scouting timeout in milliseconds.
+            </summary>
+            <param name="timeoutMs">The timeout in milliseconds.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithTimestamping(System.Boolean)">
+            <summary>
+            Enables or disables automatic timestamping of publications.
+            </summary>
+            <param name="enabled">True to enable timestamping, false to disable.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithAuth(System.String,System.String)">
+            <summary>
+            Sets the authentication credentials.
+            </summary>
+            <param name="user">The username.</param>
+            <param name="password">The password.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.WithSharedMemory(System.Boolean)">
+            <summary>
+            Enables or disables shared memory transport.
+            </summary>
+            <param name="enabled">True to enable shared memory, false to disable.</param>
+            <returns>This configuration instance for chaining.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.ToJson">
+            <summary>
+            Converts this configuration to a JSON string for the native layer.
+            Uses StringBuilder to minimize allocations.
+            </summary>
+            <returns>The JSON configuration string.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.Peer">
+            <summary>
+            Creates a default peer mode configuration.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.Client(System.String)">
+            <summary>
+            Creates a client mode configuration that connects to the specified router.
+            </summary>
+            <param name="endpoint">The router endpoint to connect to.</param>
+        </member>
+        <member name="M:ZenohDotNet.Native.SessionConfig.Router(System.String)">
+            <summary>
+            Creates a router mode configuration that listens on the specified endpoint.
+            </summary>
+            <param name="endpoint">The endpoint to listen on.</param>
+        </member>
+        <member name="T:ZenohDotNet.Native.Subscriber">
+            <summary>
+            Represents a Zenoh subscriber that receives data on a key expression.
+            </summary>
+        </member>
+        <member name="P:ZenohDotNet.Native.Subscriber.KeyExpression">
+            <summary>
+            Gets the key expression this subscriber is listening on.
+            </summary>
+        </member>
+        <member name="T:ZenohDotNet.Native.ZenohException">
+            <summary>
+            Exception thrown when a Zenoh operation fails.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.ZenohException.#ctor">
+            <summary>
+            Initializes a new instance of the ZenohException class.
+            </summary>
+        </member>
+        <member name="M:ZenohDotNet.Native.ZenohException.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the ZenohException class with a specified error message.
+            </summary>
+            <param name="message">The message that describes the error.</param>
+        </member>
+        <member name="M:ZenohDotNet.Native.ZenohException.#ctor(System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the ZenohException class with a specified error message
+            and a reference to the inner exception that is the cause of this exception.
+            </summary>
+            <param name="message">The error message that explains the reason for the exception.</param>
+            <param name="innerException">The exception that is the cause of the current exception.</param>
+        </member>
+        <member name="M:ZenohDotNet.Native.ZenohException.GetLastNativeError">
+            <summary>
+            Gets the last error message from the native Zenoh library.
+            </summary>
+            <returns>The error message, or null if no error occurred.</returns>
+        </member>
+        <member name="M:ZenohDotNet.Native.ZenohException.FromLastError(System.String)">
+            <summary>
+            Creates a ZenohException with the last native error message appended.
+            </summary>
+            <param name="message">The base error message.</param>
+            <returns>A new ZenohException with detailed error information.</returns>
+        </member>
+    </members>
+</doc>
