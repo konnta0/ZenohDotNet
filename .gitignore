@@ -217,6 +217,13 @@ PublishScripts/
 !/packages/
 !/packages/**
 !**/[Pp]ackages/build/
+# Unity Packages folder (manifest.json, packages-lock.json)
+!samples/unity/**/[Pp]ackages/
+!samples/unity/**/[Pp]ackages/**
+# Ignore NuGet installed packages in Unity Assets folder (native binaries)
+samples/unity/**/Assets/[Pp]ackages/
+!ZenohUnityExample/[Pp]ackages/manifest.json
+!ZenohUnityExample/[Pp]ackages/packages-lock.json
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
