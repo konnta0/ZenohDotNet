@@ -305,7 +305,12 @@ Unity-optimized wrapper with UniTask integration.
 
 **Installation via Git URL:**
 ```
-https://github.com/konnta0/ZenohDotNet.git?path=src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
+https://github.com/konnta0/ZenohDotNet.git#upm
+```
+
+if you want to use a specific release, append the tag:
+```
+https://github.com/konnta0/ZenohDotNet.git#upm@v0.1.0
 ```
 
 [Documentation](docs/unity-integration.md)
