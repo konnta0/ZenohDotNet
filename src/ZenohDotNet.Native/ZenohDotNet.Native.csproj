@@ -11,7 +11,7 @@
     <PackageId>ZenohDotNet.Native</PackageId>
     <RootNamespace>ZenohDotNet.Native</RootNamespace>
     <AssemblyName>ZenohDotNet.Native</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Description>MIT-licensed Zenoh .NET/Unity FFI bindings with embedded native runtime. Bundles Zenoh native binaries licensed under Apache-2.0.</Description>
     <PackageTags>zenoh;messaging;pubsub;distributed;iot;robotics;ffi;unity</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
