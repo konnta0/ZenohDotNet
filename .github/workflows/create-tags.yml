@@ -51,7 +51,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
           # Create individual package tags
-          for prefix in client native unity; do
+          for prefix in abstractions generator client native unity; do
             TAG="${prefix}/v${VERSION}"
             echo "Creating tag: $TAG"
             if [ "$FORCE" = "true" ]; then
@@ -67,6 +67,24 @@ jobs:
           else
             git push origin --tags
           fi
+
+  publish-abstractions:
+    name: Publish Abstractions
+    needs: create-tags
+    uses: ./.github/workflows/publish-abstractions.yml
+    with:
+      version: ${{ needs.create-tags.outputs.version }}
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+  publish-generator:
+    name: Publish Generator
+    needs: [create-tags, publish-abstractions]
+    uses: ./.github/workflows/publish-generator.yml
+    with:
+      version: ${{ needs.create-tags.outputs.version }}
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-client:
     name: Publish Client
@@ -88,7 +106,7 @@ jobs:
 
   publish-unity:
     name: Publish Unity
-    needs: [create-tags]
+    needs: create-tags
     uses: ./.github/workflows/publish-unity.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
