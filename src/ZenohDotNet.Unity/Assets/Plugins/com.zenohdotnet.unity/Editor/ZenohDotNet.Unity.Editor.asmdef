@@ -2,8 +2,7 @@
     "name": "ZenohDotNet.Unity.Editor",
     "rootNamespace": "ZenohDotNet.Unity.Editor",
     "references": [
-        "ZenohDotNet.Unity",
-        "ZenohDotNet.Native"
+        "ZenohDotNet.Unity"
     ],
     "includePlatforms": [
         "Editor"

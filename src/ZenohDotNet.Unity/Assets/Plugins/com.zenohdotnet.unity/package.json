@@ -3,7 +3,7 @@
   "version": "0.1.6",
   "displayName": "ZenohDotNet for Unity",
   "license": "MIT",
-  "description": "Community-maintained Zenoh .NET bindings for Unity with UniTask support. Native binaries included.",
+  "description": "Community-maintained Zenoh .NET bindings for Unity with UniTask support.",
   "unity": "2021.3",
   "unityRelease": "0f1",
   "keywords": [

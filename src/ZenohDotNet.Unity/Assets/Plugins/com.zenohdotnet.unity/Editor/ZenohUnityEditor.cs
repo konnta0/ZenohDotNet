@@ -44,8 +44,9 @@ namespace ZenohDotNet.Unity.Editor
             var checks = new[]
             {
                 ("Windows x64", $"{packagePath}/Plugins/Windows/x86_64/zenoh_ffi.dll"),
-                ("Linux x64", $"{packagePath}/Plugins/Linux/x86_64/libzenoh_ffi.so"),
-                ("macOS", $"{packagePath}/Plugins/macOS/libzenoh_ffi.dylib"),
+                ("Linux x64", $"{packagePath}/Plugins/Linux/x86_64/zenoh_ffi.so"),
+                ("macOS", $"{packagePath}/Plugins/macOS/zenoh_ffi.dylib"),
+                ("iOS", $"{packagePath}/Plugins/iOS/zenoh_ffi.a"),
             };
 
             int found = 0;
