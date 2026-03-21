@@ -70,8 +70,6 @@ jobs:
       - name: Pack
         run: |
           dotnet restore ZenohDotNet.slnx
-          dotnet pack src/ZenohDotNet.Abstractions -c Release -o packages
-          dotnet pack src/ZenohDotNet.Generator -c Release -o packages
           dotnet pack src/ZenohDotNet.Client -c Release -o packages
 
       - name: Upload packages

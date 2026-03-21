@@ -57,6 +57,10 @@ jobs:
             target: aarch64-apple-darwin
             rid: osx-arm64
             lib: libzenoh_ffi.dylib
+          - os: macos-latest
+            target: aarch64-apple-ios
+            rid: ios-arm64
+            lib: libzenoh_ffi.a
 
     steps:
       - uses: actions/checkout@v4
@@ -99,26 +103,6 @@ jobs:
         with:
           path: native/output
 
-      - name: Copy native libraries
-        run: |
-          mkdir -p src/ZenohDotNet.Native/runtimes
-          for rid in win-x64 win-arm64 linux-x64 linux-arm64 osx-x64 osx-arm64; do
-            mkdir -p src/ZenohDotNet.Native/runtimes/$rid/native
-            cp -r native/output/native-$rid/* src/ZenohDotNet.Native/runtimes/$rid/native/ || true
-          done
-
-      - name: Pack
-        run: |
-          dotnet restore ZenohDotNet.slnx
-          dotnet build src/ZenohDotNet.Native -c Release --no-restore
-          dotnet pack src/ZenohDotNet.Native -c Release -o nupkgs --no-build
-
-      - name: Upload package
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-native
-          path: nupkgs/*.nupkg
-
       - name: Extract version
         id: version
         run: |
@@ -147,6 +131,26 @@ jobs:
             git tag "$TAG"
             git push origin "$TAG"
           fi
+
+      - name: Copy native libraries
+        run: |
+          mkdir -p src/ZenohDotNet.Native/runtimes
+          for rid in win-x64 win-arm64 linux-x64 linux-arm64 osx-x64 osx-arm64 ios-arm64; do
+            mkdir -p src/ZenohDotNet.Native/runtimes/$rid/native
+            cp -r native/output/native-$rid/* src/ZenohDotNet.Native/runtimes/$rid/native/ || true
+          done
+
+      - name: Pack
+        run: |
+          dotnet restore ZenohDotNet.slnx
+          dotnet build src/ZenohDotNet.Native -c Release --no-restore
+          dotnet pack src/ZenohDotNet.Native -c Release -o nupkgs --no-build
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-native
+          path: nupkgs/*.nupkg
 
       - name: Publish to NuGet
         run: dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -186,11 +186,48 @@ DefaultImporter:
 METAEOF
 }
 
+generate_cs_meta() {
+    local file="$1"
+    local guid=$(echo -n "$file" | md5sum | cut -d' ' -f1)
+
+    cat > "${file}.meta" << METAEOF
+fileFormatVersion: 2
+guid: ${guid}
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+METAEOF
+}
+
+generate_asmdef_meta() {
+    local file="$1"
+    local guid=$(echo -n "$file" | md5sum | cut -d' ' -f1)
+
+    cat > "${file}.meta" << METAEOF
+fileFormatVersion: 2
+guid: ${guid}
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData:
+  assetBundleName:
+  assetBundleVariant:
+METAEOF
+}
+
 UNITY_PKG="$1"
 NATIVE_LIBS="$2"
+ARTIFACT_PREFIX="${3:-unity-native}"
 
 if [ -z "$UNITY_PKG" ] || [ -z "$NATIVE_LIBS" ]; then
-    echo "Usage: $0 <unity_pkg_path> <native_libs_path>"
+    echo "Usage: $0 <unity_pkg_path> <native_libs_path> [artifact_prefix] [native_cs_dir]"
+    echo "  artifact_prefix defaults to 'unity-native'"
+    echo "  native_cs_dir: optional path to Native C# source files to copy into Runtime/Native/"
     exit 1
 fi
 
@@ -199,11 +236,11 @@ mkdir -p "$UNITY_PKG/Plugins"
 generate_folder_meta "$UNITY_PKG/Plugins"
 
 # Windows x64
-if [ -d "$NATIVE_LIBS/unity-native-win-x64" ]; then
+if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-win-x64" ]; then
     mkdir -p "$UNITY_PKG/Plugins/Windows/x86_64"
     generate_folder_meta "$UNITY_PKG/Plugins/Windows"
     generate_folder_meta "$UNITY_PKG/Plugins/Windows/x86_64"
-    cp "$NATIVE_LIBS/unity-native-win-x64"/*.dll "$UNITY_PKG/Plugins/Windows/x86_64/"
+    cp "$NATIVE_LIBS/${ARTIFACT_PREFIX}-win-x64"/*.dll "$UNITY_PKG/Plugins/Windows/x86_64/"
     for f in "$UNITY_PKG/Plugins/Windows/x86_64"/*.dll; do
         generate_plugin_meta_windows "$f"
     done
@@ -211,12 +248,12 @@ if [ -d "$NATIVE_LIBS/unity-native-win-x64" ]; then
 fi
 
 # Linux x64
-if [ -d "$NATIVE_LIBS/unity-native-linux-x64" ]; then
+if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-linux-x64" ]; then
     mkdir -p "$UNITY_PKG/Plugins/Linux/x86_64"
     generate_folder_meta "$UNITY_PKG/Plugins/Linux"
     generate_folder_meta "$UNITY_PKG/Plugins/Linux/x86_64"
     # Rename libzenoh_ffi.so to zenoh_ffi.so (Unity expects no lib prefix)
-    for src in "$NATIVE_LIBS/unity-native-linux-x64"/*.so; do
+    for src in "$NATIVE_LIBS/${ARTIFACT_PREFIX}-linux-x64"/*.so; do
         dst="$UNITY_PKG/Plugins/Linux/x86_64/$(basename "$src" | sed 's/^lib//')"
         cp "$src" "$dst"
     done
@@ -227,20 +264,20 @@ if [ -d "$NATIVE_LIBS/unity-native-linux-x64" ]; then
 fi
 
 # macOS (Universal - supports both x64 and ARM64)
-if [ -d "$NATIVE_LIBS/unity-native-osx-x64" ] || [ -d "$NATIVE_LIBS/unity-native-osx-arm64" ]; then
+if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-x64" ] || [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-arm64" ]; then
     mkdir -p "$UNITY_PKG/Plugins/macOS"
     generate_folder_meta "$UNITY_PKG/Plugins/macOS"
-    
+
     # Prefer ARM64, fallback to x64
     # Note: rename libzenoh_ffi.dylib to zenoh_ffi.dylib (Unity expects no lib prefix)
-    if [ -d "$NATIVE_LIBS/unity-native-osx-arm64" ]; then
-        for src in "$NATIVE_LIBS/unity-native-osx-arm64"/*.dylib; do
+    if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-arm64" ]; then
+        for src in "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-arm64"/*.dylib; do
             dst="$UNITY_PKG/Plugins/macOS/$(basename "$src" | sed 's/^lib//')"
             cp "$src" "$dst"
         done
         echo "Copied macOS ARM64 native library"
-    elif [ -d "$NATIVE_LIBS/unity-native-osx-x64" ]; then
-        for src in "$NATIVE_LIBS/unity-native-osx-x64"/*.dylib; do
+    elif [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-x64" ]; then
+        for src in "$NATIVE_LIBS/${ARTIFACT_PREFIX}-osx-x64"/*.dylib; do
             dst="$UNITY_PKG/Plugins/macOS/$(basename "$src" | sed 's/^lib//')"
             cp "$src" "$dst"
         done
@@ -255,11 +292,11 @@ if [ -d "$NATIVE_LIBS/unity-native-osx-x64" ] || [ -d "$NATIVE_LIBS/unity-native
 fi
 
 # iOS (ARM64 - static library)
-if [ -d "$NATIVE_LIBS/unity-native-ios-arm64" ]; then
+if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-ios-arm64" ]; then
     mkdir -p "$UNITY_PKG/Plugins/iOS"
     generate_folder_meta "$UNITY_PKG/Plugins/iOS"
     # Rename libzenoh_ffi.a to zenoh_ffi.a (Unity expects no lib prefix)
-    for src in "$NATIVE_LIBS/unity-native-ios-arm64"/*.a; do
+    for src in "$NATIVE_LIBS/${ARTIFACT_PREFIX}-ios-arm64"/*.a; do
         dst="$UNITY_PKG/Plugins/iOS/$(basename "$src" | sed 's/^lib//')"
         cp "$src" "$dst"
     done
@@ -277,3 +314,18 @@ find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"
 
 echo "=== Meta file content sample (macOS) ==="
 cat "$UNITY_PKG/Plugins/macOS/zenoh_ffi.dylib.meta" 2>/dev/null || echo "No macOS meta"
+
+# Copy Native C# sources if provided
+NATIVE_CS_DIR="${4:-}"
+if [ -n "$NATIVE_CS_DIR" ] && [ -d "$NATIVE_CS_DIR" ]; then
+    mkdir -p "$UNITY_PKG/Runtime/Native"
+    generate_folder_meta "$UNITY_PKG/Runtime/Native"
+    for cs in "$NATIVE_CS_DIR"/*.cs; do
+        if [ -f "$cs" ]; then
+            cp "$cs" "$UNITY_PKG/Runtime/Native/"
+            generate_cs_meta "$UNITY_PKG/Runtime/Native/$(basename "$cs")"
+        fi
+    done
+    echo "=== Native C# sources copied ==="
+    ls "$UNITY_PKG/Runtime/Native/"*.cs 2>/dev/null || echo "No C# sources found"
+fi
