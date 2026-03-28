@@ -195,14 +195,20 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.zenohdotnet.unity": {
-      "version": "https://github.com/konnta0/ZenohDotNet.git#upm",
+    "com.yucchiy.unicli-server": {
+      "version": "https://github.com/yucchiy/UniCli.git?path=src/UniCli.Unity/Packages/com.yucchiy.unicli-server#v1.2.2",
       "depth": 0,
       "source": "git",
+      "dependencies": {},
+      "hash": "88596adaae70d6639e8f251b57bdb715399d96ce"
+    },
+    "com.zenohdotnet.unity": {
+      "version": "file:../../../../src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity",
+      "depth": 0,
+      "source": "local",
       "dependencies": {
         "com.cysharp.unitask": "2.5.4"
-      },
-      "hash": "0b91225239dc54b97acb7e20d0b172ea5fe52202"
+      }
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

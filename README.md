@@ -114,9 +114,10 @@ await Task.Delay(-1);
 
 ### Unity (ZenohDotNet.Unity)
 
-1. Install [NuGet for Unity](https://github.com/GlitchEnzo/NuGetForUnity)
-2. Install `ZenohDotNet.Native` via NuGet for Unity
-3. Add `com.zenohdotnet.unity` via UPM
+1. Add `com.zenohdotnet.unity` via UPM (Git URL):
+   ```
+   https://github.com/konnta0/ZenohDotNet.git#upm
+   ```
 
 ```csharp
 using UnityEngine;
@@ -259,8 +260,6 @@ ZenohDotNet/
 │       └── ZenohUnityExample/  # Unity sample project
 ├── scripts/                    # Build automation
 ├── packages/                   # Build output (gitignored)
-│   ├── nuget/                  # NuGet packages
-│   └── upm/                    # Unity packages
 │
 └── ZenohDotNet.slnx          # Solution file (.NET projects only)
 ```
@@ -301,7 +300,7 @@ Unity-optimized wrapper with UniTask integration.
 - **Use case**: Unity 2021.2+ projects
 - **API style**: UniTask async + synchronous methods
 - **Features**: Main thread callbacks, Unity lifecycle integration
-- **Dependencies**: ZenohDotNet.Native (NuGet for Unity), com.cysharp.unitask (UPM)
+- **Dependencies**: com.cysharp.unitask (UPM)
 
 **Installation via Git URL:**
 ```
@@ -475,20 +474,30 @@ publisher.Put(buffer.Slice(0, written));
 
 ### Unity Integration
 
-The Unity package includes the Source Generator in the `Editor` folder. The generator is automatically available when you import the ZenohDotNet package via UPM.
+The `com.zenohdotnet.unity` UPM package includes native bindings, native libraries, and Unity wrappers in a single package. No additional NuGet package installation is required.
 
-**Package structure:**
+> **Note:** The NuGet package `ZenohDotNet.Native` is still published separately for .NET (non-Unity) applications.
+
+**Package structure (com.zenohdotnet.unity):**
 ```
-com.zenohdotnet.native/
+com.zenohdotnet.unity/
 ├── Runtime/
-│   ├── ZenohDotNet.Native.asmdef
-│   └── ZenohDotNet.Abstractions.dll  (attributes for [ZenohMessage])
+│   ├── Native/                     ← C# FFI bindings (copied by CI)
+│   │   ├── NativeMethods.g.cs
+│   │   └── ...
+│   ├── Session.cs                  ← Unity wrappers
+│   ├── Publisher.cs
+│   ├── Subscriber.cs
+│   └── ZenohDotNet.Unity.asmdef
 ├── Editor/
-│   ├── ZenohDotNet.Generator.asmdef
-│   ├── ZenohDotNet.Generator.dll     (source generator)
-│   └── ZenohDotNet.Abstractions.dll
-└── Plugins/
-    └── (native libraries)
+│   └── ZenohUnityEditor.cs
+├── Plugins/                        ← Native binaries (copied by CI)
+│   ├── Windows/x86_64/zenoh_ffi.dll
+│   ├── Linux/x86_64/zenoh_ffi.so
+│   ├── macOS/zenoh_ffi.dylib
+│   └── iOS/zenoh_ffi.a
+├── package.json
+└── LICENSE.md
 ```
 
 **Usage in Unity:**
