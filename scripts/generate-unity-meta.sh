@@ -205,6 +205,41 @@ MonoImporter:
 METAEOF
 }
 
+generate_plugin_meta_managed() {
+    local file="$1"
+    local guid=$(echo -n "$file" | md5sum | cut -d' ' -f1)
+
+    cat > "${file}.meta" << METAEOF
+fileFormatVersion: 2
+guid: ${guid}
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  iconMap: {}
+  executionOrder: {}
+  defineConstraints: []
+  isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
+  platformData:
+  - first:
+      Any: 
+    second:
+      enabled: 1
+      settings: {}
+  - first:
+      Editor: Editor
+    second:
+      enabled: 1
+      settings:
+        DefaultValueInitialized: true
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+METAEOF
+}
+
 generate_asmdef_meta() {
     local file="$1"
     local guid=$(echo -n "$file" | md5sum | cut -d' ' -f1)
@@ -224,10 +259,12 @@ UNITY_PKG="$1"
 NATIVE_LIBS="$2"
 ARTIFACT_PREFIX="${3:-unity-native}"
 
+MANAGED_DLL="${4:-}"
+
 if [ -z "$UNITY_PKG" ] || [ -z "$NATIVE_LIBS" ]; then
-    echo "Usage: $0 <unity_pkg_path> <native_libs_path> [artifact_prefix] [native_cs_dir]"
+    echo "Usage: $0 <unity_pkg_path> <native_libs_path> [artifact_prefix] [managed_dll]"
     echo "  artifact_prefix defaults to 'unity-native'"
-    echo "  native_cs_dir: optional path to Native C# source files to copy into Runtime/Native/"
+    echo "  managed_dll: optional path to prebuilt ZenohDotNet.Native.dll to include as managed plugin"
     exit 1
 fi
 
@@ -315,17 +352,10 @@ find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"
 echo "=== Meta file content sample (macOS) ==="
 cat "$UNITY_PKG/Plugins/macOS/zenoh_ffi.dylib.meta" 2>/dev/null || echo "No macOS meta"
 
-# Copy Native C# sources if provided
-NATIVE_CS_DIR="${4:-}"
-if [ -n "$NATIVE_CS_DIR" ] && [ -d "$NATIVE_CS_DIR" ]; then
-    mkdir -p "$UNITY_PKG/Runtime/Native"
-    generate_folder_meta "$UNITY_PKG/Runtime/Native"
-    for cs in "$NATIVE_CS_DIR"/*.cs; do
-        if [ -f "$cs" ]; then
-            cp "$cs" "$UNITY_PKG/Runtime/Native/"
-            generate_cs_meta "$UNITY_PKG/Runtime/Native/$(basename "$cs")"
-        fi
-    done
-    echo "=== Native C# sources copied ==="
-    ls "$UNITY_PKG/Runtime/Native/"*.cs 2>/dev/null || echo "No C# sources found"
+# Copy managed DLL if provided
+if [ -n "$MANAGED_DLL" ] && [ -f "$MANAGED_DLL" ]; then
+    cp "$MANAGED_DLL" "$UNITY_PKG/Runtime/"
+    generate_plugin_meta_managed "$UNITY_PKG/Runtime/$(basename "$MANAGED_DLL")"
+    echo "=== Managed DLL copied ==="
+    echo "  $(basename "$MANAGED_DLL") -> $UNITY_PKG/Runtime/"
 fi
