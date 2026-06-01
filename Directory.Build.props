@@ -9,9 +9,6 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>
 
-    <!-- Version -->
-    <VersionPrefix>0.1.0</VersionPrefix>
-
     <!-- Build Settings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
@@ -31,6 +28,9 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
+
+  <!-- Version: single source of truth in build/Versions.props -->
+  <Import Project="$(MSBuildThisFileDirectory)build/Versions.props" Condition="Exists('$(MSBuildThisFileDirectory)build/Versions.props')" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />

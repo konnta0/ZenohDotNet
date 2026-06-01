@@ -1,7 +1,7 @@
 # ZenohDotNet
 
 ![Development Status](https://img.shields.io/badge/status-alpha-red)
-![Version](https://img.shields.io/badge/version-0.1.x-blue)
+![Version](https://img.shields.io/badge/version-1.9.0.x-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 
@@ -13,7 +13,8 @@ C# bindings for [Eclipse Zenoh](https://zenoh.io) distributed messaging — embe
 
 | | |
 |--|--|
-| **Maturity** | Alpha (`v0.1.x`) — APIs and packaging may change between releases |
+| **Maturity** | Alpha — APIs may change; package versions track the embedded Zenoh runtime |
+| **Package version** | `1.9.0.x` = Zenoh `1.9.0` + dotnet release patch (see [Versioning](#versioning)) |
 | **Zenoh runtime** | [zenoh Rust `1.9.0`](https://github.com/eclipse-zenoh/zenoh/releases/tag/1.9.0), statically linked into native binaries |
 | **Production use** | Evaluate for your workload; no stability guarantees yet |
 
@@ -295,7 +296,7 @@ https://github.com/konnta0/ZenohDotNet.git#upm
 
 if you want to use a specific release, append the tag:
 ```
-https://github.com/konnta0/ZenohDotNet.git#upm@v0.1.0
+https://github.com/konnta0/ZenohDotNet.git#upm@v1.9.0.0
 ```
 
 [Documentation](docs/unity-integration.md)
@@ -339,11 +340,43 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Build C#: `dotnet build`
 5. Run tests: `dotnet test`
 
+## Versioning
+
+NuGet and UPM package versions follow **`{zenoh}.{dotnet-patch}`** (four numeric segments):
+
+| Version | Meaning |
+|---------|---------|
+| `1.9.0.0` | Zenoh runtime **1.9.0**, first ZenohDotNet release for that runtime |
+| `1.9.0.1` | Same Zenoh **1.9.0**, dotnet-only fix (C# / packaging / docs) |
+| `1.9.1.0` | Zenoh runtime bumped to **1.9.1** |
+
+**Single source of truth:** [`build/Versions.props`](build/Versions.props) (`ZenohVersion` + `Version`).
+
+```bash
+# Bump Zenoh runtime to 1.9.1 (resets dotnet patch to 0)
+./scripts/bump-version.sh --zenoh 1.9.1 --patch 0
+
+# Dotnet-only patch on current runtime (1.9.0.0 -> 1.9.0.1)
+./scripts/bump-version.sh --patch 1
+
+# Verify Cargo.toml, package.json, and notices match Versions.props
+./scripts/verify-versions.sh
+```
+
+**Release:** commit the bump, then push one tag — CI publishes all packages with that version:
+
+```bash
+git tag v1.9.0.0
+git push origin v1.9.0.0
+```
+
+NuGet may normalize `1.9.0.0` to `1.9.0` in the feed; patch releases (`1.9.0.1`, …) keep the fourth segment.
+
 ## Roadmap
 
-### Shipped in v0.1.x
+### Shipped
 
-Core pub/sub, query, liveliness, Source Generator, cross-platform NuGet/UPM packaging, Unity (UniTask), mobile cross-build support, CI, samples, and benchmarks.
+Core pub/sub, query, liveliness, Source Generator, cross-platform NuGet/UPM packaging, Unity (UniTask), mobile cross-build support, CI, samples, and benchmarks. Zenoh **1.9.0** runtime with aligned package versioning.
 
 ### Planned
 
@@ -358,8 +391,8 @@ ZenohDotNet includes an incremental source generator that provides zero-copy ser
 ### Installation
 
 ```xml
-<PackageReference Include="ZenohDotNet.Abstractions" Version="0.1.0" />
-<PackageReference Include="ZenohDotNet.Generator" Version="0.1.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+<PackageReference Include="ZenohDotNet.Abstractions" Version="1.9.0.0" />
+<PackageReference Include="ZenohDotNet.Generator" Version="1.9.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
 ### Usage

@@ -7,7 +7,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Version (e.g., 1.0.0)'
+        description: 'Package version (e.g., 1.9.0.0)'
         required: true
         type: string
     secrets:
@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 1.0.0)'
+        description: 'Package version (e.g., 1.9.0.0)'
         required: true
       force:
         description: 'Force overwrite existing release'
@@ -143,8 +143,7 @@ jobs:
       - name: Pack
         run: |
           dotnet restore ZenohDotNet.slnx
-          dotnet build src/ZenohDotNet.Native -c Release --no-restore
-          dotnet pack src/ZenohDotNet.Native -c Release -o nupkgs --no-build
+          dotnet pack src/ZenohDotNet.Native -c Release -o nupkgs -p:Version=${{ steps.version.outputs.version }}
 
       - name: Upload package
         uses: actions/upload-artifact@v7

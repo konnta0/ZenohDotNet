@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 1.0.0)'
+        description: 'Package version (e.g., 1.9.0.0)'
         required: true
       force:
         description: 'Force overwrite existing tags'
@@ -30,6 +30,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Verify version alignment
+        run: ./scripts/verify-versions.sh
 
       - name: Extract version
         id: version
