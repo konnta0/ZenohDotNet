@@ -5,35 +5,23 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 
-C# bindings for [Zenoh](https://zenoh.io) distributed messaging system with embedded runtime and Unity support.
+C# bindings for [Eclipse Zenoh](https://zenoh.io) distributed messaging — embedded native runtime and Unity support.
 
----
+## Project Status
 
-## ⚠️ Project Status
+**Unofficial, community-maintained bindings.** This project is not affiliated with or endorsed by the Eclipse Foundation. "Zenoh" is a trademark of the Eclipse Foundation.
 
-**This project is in early development (v0.1.x) and is NOT ready for production use.**
+| | |
+|--|--|
+| **Maturity** | Alpha (`v0.1.x`) — APIs and packaging may change between releases |
+| **Zenoh runtime** | [zenoh Rust `1.9.0`](https://github.com/eclipse-zenoh/zenoh/releases/tag/1.9.0), statically linked into native binaries |
+| **Production use** | Evaluate for your workload; no stability guarantees yet |
 
-### Important Notices
+**Available today:** Session, Publisher, Subscriber, Query/Queryable, Liveliness, Source Generator; .NET 8+ and Unity 2021.3+ on desktop platforms.
 
-- **Breaking Changes**: The API may change significantly between versions without prior notice
-- **No Stability Guarantees**: Features may be added, modified, or removed at any time
-- **Limited Testing**: The library has not been extensively tested in real-world scenarios
-- **No Warranty**: This software is provided "AS IS" without warranty of any kind
-- **Production Use**: DO NOT use this library in production environments
+**Caveats:** Performance is not fully tuned; test coverage is still growing; Android/iOS libraries require a [manual cross-build](docs/mobile-build-guide.md). Migrating from Zenoh 1.8.x peers/routers may need [config updates](https://zenoh.io/docs/migration_1.9/regions/).
 
-### What to Expect
-
-- ✅ Basic functionality works (Session, Publisher, Subscriber, Query/Queryable)
-- ⚠️ APIs are subject to change
-- ⚠️ Performance has not been optimized
-- ⚠️ Documentation may be incomplete or outdated
-- ⚠️ Some features are experimental or untested
-
-### Disclaimer
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-See the [LICENSE](LICENSE) file for full details.
+Terms: [LICENSE](LICENSE) (MIT for this repo) · [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (Apache-2.0 for bundled Zenoh runtime)
 
 ---
 
@@ -47,7 +35,7 @@ ZenohDotNet provides three complementary packages for using Zenoh in .NET and Un
 
 ### Key Features
 
-- **Embedded Runtime**: Zenoh C library included - no separate installation required
+- **Embedded Runtime**: Zenoh native library (Rust) included — no separate installation required
 - **Cross-Platform**: Windows, Linux, macOS on x64 and ARM64
 - **Mobile Support**: Android (arm64-v8a, armeabi-v7a, x86_64) and iOS (arm64)
 - **Unity Support**: First-class Unity integration with UniTask
@@ -59,8 +47,8 @@ ZenohDotNet provides three complementary packages for using Zenoh in .NET and Un
 
 ```
 ┌─────────────────┐
-│  Zenoh C FFI    │  ← zenoh-c (embedded as submodule)
-│  (zenoh-c)      │
+│  Eclipse Zenoh  │  ← zenoh Rust crate (Apache-2.0, statically linked)
+│  (Rust)         │
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -165,11 +153,11 @@ public class ZenohExample : MonoBehaviour
 
 ### Unity Platforms
 
-- Windows (x64, ARM64)
-- Linux (x64, ARM64)
-- macOS (x64, ARM64)
-- Android (ARM64) - Coming soon
-- iOS (ARM64) - Coming soon
+| Platform | Status |
+|----------|--------|
+| Windows / Linux / macOS (x64, ARM64) | Supported |
+| Android (arm64-v8a, armeabi-v7a, x86_64) | Supported via [cross-build](docs/mobile-build-guide.md) |
+| iOS (arm64) | Supported via [cross-build](docs/mobile-build-guide.md) |
 
 ## Building from Source
 
@@ -177,14 +165,13 @@ public class ZenohExample : MonoBehaviour
 
 - [Rust](https://rustup.rs/) (latest stable)
 - [.NET SDK 8.0+](https://dotnet.microsoft.com/download)
-- CMake 3.16+ (for building zenoh-c)
-- C/C++ compiler toolchain
+- C/C++ linker toolchain (provided by the Rust toolchain on most platforms)
 
 ### Build Steps
 
-1. **Clone the repository with submodules:**
+1. **Clone the repository:**
    ```bash
-   git clone --recursive https://github.com/konnta0/ZenohDotNet.git
+   git clone https://github.com/konnta0/ZenohDotNet.git
    cd ZenohDotNet
    ```
 
@@ -239,8 +226,7 @@ The build scripts will automatically use `cross` if available to build for all t
 ```
 ZenohDotNet/
 ├── native/                      # Rust FFI layer
-│   ├── zenoh-ffi/              # Rust project with csbindgen
-│   │   ├── zenoh-c/            # zenoh-c submodule
+│   ├── zenoh-ffi/              # Rust project with csbindgen (links zenoh crate)
 │   │   ├── src/lib.rs          # FFI function definitions
 │   │   └── build.rs            # Build script + csbindgen config
 │   └── output/                 # Build artifacts (gitignored)
@@ -270,7 +256,7 @@ ZenohDotNet/
 
 [![NuGet](https://img.shields.io/nuget/v/ZenohDotNet.Native.svg)](https://www.nuget.org/packages/ZenohDotNet.Native/)
 
-Low-level P/Invoke bindings to Zenoh C library. Includes native runtime for all supported platforms.
+Low-level P/Invoke bindings to the embedded Zenoh runtime. Native libraries for all supported platforms are included in the package.
 
 - **Target**: .NET Standard 2.1
 - **Use case**: Low-level access, Unity compatibility
@@ -355,28 +341,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Roadmap
 
-### v0.1.0 (Current)
-- [x] Basic Session, Publisher, Subscriber
-- [x] Query/Queryable support (request-response pattern)
-- [x] Cross-platform native library packaging
-- [x] .NET Standard 2.1 support (ZenohDotNet.Native)
-- [x] .NET 8.0 support (ZenohDotNet.Client)
-- [x] Unity support with UniTask
-- [x] Build automation scripts
-- [x] CI/CD pipeline (GitHub Actions)
-- [x] Comprehensive documentation and samples
-- [x] Liveliness API
-- [x] Advanced configuration API
-- [x] Android and iOS support for Unity
-- [x] Integration tests with running Zenoh instances(p2p only)
-- [x] Performance benchmarks
-- [x] Full Zenoh API coverage
-- [x] Performance optimizations (restricted)
-- [x] **Source Generator for typed messages** (ZenohDotNet.Generator)
+### Shipped in v0.1.x
 
-### v0.2.0 (Future)
+Core pub/sub, query, liveliness, Source Generator, cross-platform NuGet/UPM packaging, Unity (UniTask), mobile cross-build support, CI, samples, and benchmarks.
+
+### Planned
+
+- [ ] Zenoh 1.9.x migration notes and config examples in docs
 - [ ] Advanced Unity features (ScriptableObjects, etc.)
-- [ ] Extensive documentation and samples
+- [ ] Broader integration test matrix (router/client topologies)
 
 ## Source Generator
 
@@ -568,7 +541,9 @@ publisher.Put(buffer.AsSpan());
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+Native binaries bundled in NuGet and Unity packages include the Eclipse Zenoh runtime, redistributed under the Apache License 2.0. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [licenses/](licenses/).
 
 ## Acknowledgments
 
@@ -579,8 +554,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Links
 
 - [Zenoh Website](https://zenoh.io)
-- [Zenoh GitHub](https://github.com/eclipse-zenoh/zenoh)
-- [Zenoh C Library](https://github.com/eclipse-zenoh/zenoh-c)
+- [Zenoh GitHub (Rust)](https://github.com/eclipse-zenoh/zenoh)
 - [NuGet.org](https://www.nuget.org/)
 - [Unity Asset Store](https://assetstore.unity.com/) - Coming soon
 

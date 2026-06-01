@@ -28,6 +28,8 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="THIRD_PARTY_NOTICES.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\licenses\zenoh-APACHE-2.0.txt" Pack="true" PackagePath="licenses\" Link="licenses\zenoh-APACHE-2.0.txt" />
+    <None Include="..\..\licenses\zenoh-NOTICE.md" Pack="true" PackagePath="licenses\" Link="licenses\zenoh-NOTICE.md" />
   </ItemGroup>
 
   <ItemGroup>
