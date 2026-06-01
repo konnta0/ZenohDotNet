@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Eclipse Zenoh Rust crate version embedded in native binaries -->
+    <ZenohVersion>1.9.0</ZenohVersion>
+    <!-- NuGet / UPM package version: {ZenohVersion}.{dotnet-patch} -->
+    <Version>1.9.0.0</Version>
+  </PropertyGroup>
+</Project>

@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Verify version alignment
+        run: ./scripts/verify-versions.sh
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -107,7 +110,9 @@ jobs:
           echo "=== com.zenohdotnet.unity ==="
           cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
           jq -e '.name == "com.zenohdotnet.unity"' package.json > /dev/null
-          echo "✓ Valid"
+          PACKAGE_VERSION=$(grep -E '<Version>' "$GITHUB_WORKSPACE/build/Versions.props" | sed -E 's/.*<Version>([^<]+)<.*/\1/')
+          jq -e --arg v "$PACKAGE_VERSION" '.version == $v' package.json > /dev/null
+          echo "✓ Valid (version $PACKAGE_VERSION)"
 
   # Lint (once)
   lint:
