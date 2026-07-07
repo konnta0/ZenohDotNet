@@ -111,7 +111,7 @@ jobs:
           cd src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity
           jq -e '.name == "com.zenohdotnet.unity"' package.json > /dev/null
           PACKAGE_VERSION=$(grep -E '<Version>' "$GITHUB_WORKSPACE/build/Versions.props" | sed -E 's/.*<Version>([^<]+)<.*/\1/')
-          UPM_VERSION=$(./scripts/upm-version.sh "$PACKAGE_VERSION")
+          UPM_VERSION=$("$GITHUB_WORKSPACE/scripts/upm-version.sh" "$PACKAGE_VERSION")
           jq -e --arg v "$UPM_VERSION" '.version == $v' package.json > /dev/null
           echo "✓ Valid (NuGet $PACKAGE_VERSION, UPM $UPM_VERSION)"
 

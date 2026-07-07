@@ -41,17 +41,15 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_call" ]; then
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-            echo "tag=abstractions/v${{ inputs.version }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-            echo "tag=abstractions/v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
           else
             VERSION=${GITHUB_REF#refs/tags/abstractions/v}
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "tag=abstractions/v$VERSION" >> $GITHUB_OUTPUT
           fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=abstractions/v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create tag (if manual)
         if: github.event_name == 'workflow_dispatch'
