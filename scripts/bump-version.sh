@@ -89,7 +89,7 @@ for notice in "$ROOT/THIRD_PARTY_NOTICES.md" \
   "$ROOT/src/ZenohDotNet.Native/THIRD_PARTY_NOTICES.md" \
   "$ROOT/src/ZenohDotNet.Client/THIRD_PARTY_NOTICES.md" \
   "$ROOT/src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity/THIRD_PARTY_NOTICES.md"; do
-  sed -i.bak -E "s|release \`[^`]+\`|release \`${TARGET_ZENOH}\`|" "$notice"
+  sed -i.bak -E 's|release `[^`]+`|release `'"${TARGET_ZENOH}"'`|' "$notice"
   rm -f "${notice}.bak"
 done
 
