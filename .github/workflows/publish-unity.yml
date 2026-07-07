@@ -125,27 +125,20 @@ jobs:
             git push origin "$TAG"
           fi
 
-      # --- Build managed DLL ---
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Build ZenohDotNet.Native DLL
-        run: dotnet build src/ZenohDotNet.Native/ZenohDotNet.Native.csproj -c Release -f netstandard2.1
-
       # --- Assemble UPM package ---
       - name: Assemble UPM package
         run: |
           VERSION="${{ steps.version.outputs.version }}"
+          UPM_VERSION="$(./scripts/upm-version.sh "$VERSION")"
           UNITY_PKG="src/ZenohDotNet.Unity/Assets/Plugins/com.zenohdotnet.unity"
-          MANAGED_DLL="src/ZenohDotNet.Native/bin/Release/netstandard2.1/ZenohDotNet.Native.dll"
 
-          # Place native binaries + managed DLL + generate .meta files
-          chmod +x scripts/generate-unity-meta.sh
-          ./scripts/generate-unity-meta.sh "$UNITY_PKG" "native/output" "native" "$MANAGED_DLL"
+          # Place native binaries + generate .meta files
+          chmod +x scripts/generate-unity-meta.sh scripts/bundle-upm-native-source.sh
+          ./scripts/generate-unity-meta.sh "$UNITY_PKG" "native/output" "native"
+          ./scripts/bundle-upm-native-source.sh "$UNITY_PKG"
 
-          # Update version in package.json
-          jq --arg v "$VERSION" '.version = $v' "$UNITY_PKG/package.json" > tmp.json
+          # Update version in package.json (UPM SemVer, not NuGet four-segment)
+          jq --arg v "$UPM_VERSION" '.version = $v' "$UNITY_PKG/package.json" > tmp.json
           mv tmp.json "$UNITY_PKG/package.json"
 
           echo "=== UPM package contents ==="

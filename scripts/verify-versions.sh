@@ -41,7 +41,8 @@ read_json_version() {
 }
 
 UPM_VERSION="$(read_json_version "$PACKAGE_JSON")"
-[[ "$UPM_VERSION" == "$PACKAGE_VERSION" ]] || fail "package.json ($UPM_VERSION) != Version ($PACKAGE_VERSION)"
+EXPECTED_UPM_VERSION="$("$ROOT/scripts/upm-version.sh" "$PACKAGE_VERSION")"
+[[ "$UPM_VERSION" == "$EXPECTED_UPM_VERSION" ]] || fail "package.json ($UPM_VERSION) != expected UPM version ($EXPECTED_UPM_VERSION) from Version ($PACKAGE_VERSION)"
 
 for notice in "$ROOT/THIRD_PARTY_NOTICES.md" \
   "$ROOT/src/ZenohDotNet.Native/THIRD_PARTY_NOTICES.md" \

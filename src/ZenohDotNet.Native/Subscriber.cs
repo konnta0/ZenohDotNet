@@ -8,14 +8,19 @@ namespace ZenohDotNet.Native
     /// <summary>
     /// Represents a Zenoh subscriber that receives data on a key expression.
     /// </summary>
-    public class Subscriber : IDisposable
+    public unsafe class Subscriber : IDisposable
     {
+        // IL2CPP (iOS and other AOT targets) cannot marshal delegates that point to
+        // instance methods to native code. Use a single static delegate marked with
+        // [MonoPInvokeCallback] and dispatch to the instance through the native
+        // context pointer (a GCHandle to this instance).
+        private static readonly NativeMethods.zenoh_declare_subscriber_callback_delegate _staticNativeCallback = OnSampleReceivedStatic;
+
         private unsafe void* _handle;
         private readonly Session _session;
         private readonly string _keyExpr;
         private readonly Action<Sample> _callback;
-        private GCHandle _callbackHandle;
-        private NativeMethods.zenoh_declare_subscriber_callback_delegate? _nativeCallback;
+        private GCHandle _selfHandle;
         private bool _disposed;
 
         /// <summary>
@@ -31,27 +36,42 @@ namespace ZenohDotNet.Native
 
             var keyBytes = Encoding.UTF8.GetBytes(keyExpr + "\0");
 
-            // Create native callback and prevent GC
-            _nativeCallback = OnSampleReceived;
-            _callbackHandle = GCHandle.Alloc(_nativeCallback);
+            // Root this instance and pass it as the native context so the static
+            // callback can dispatch back to it
+            _selfHandle = GCHandle.Alloc(this);
 
             fixed (byte* keyPtr = keyBytes)
             {
                 _handle = NativeMethods.zenoh_declare_subscriber(
                     session.Handle,
                     keyPtr,
-                    _nativeCallback,
-                    null);
+                    _staticNativeCallback,
+                    (void*)GCHandle.ToIntPtr(_selfHandle));
             }
 
             if (_handle == null)
             {
-                _callbackHandle.Free();
+                _selfHandle.Free();
                 throw ZenohException.FromLastError($"Failed to declare subscriber for key expression: {keyExpr}");
             }
         }
 
-        private unsafe void OnSampleReceived(SampleData* samplePtr, void* contextPtr)
+#if UNITY_2018_1_OR_NEWER
+        [AOT.MonoPInvokeCallback(typeof(NativeMethods.zenoh_declare_subscriber_callback_delegate))]
+#endif
+        private static unsafe void OnSampleReceivedStatic(SampleData* samplePtr, void* contextPtr)
+        {
+            if (contextPtr == null)
+                return;
+
+            var handle = GCHandle.FromIntPtr((IntPtr)contextPtr);
+            if (handle.Target is Subscriber subscriber)
+            {
+                subscriber.OnSampleReceived(samplePtr);
+            }
+        }
+
+        private unsafe void OnSampleReceived(SampleData* samplePtr)
         {
             try
             {
@@ -115,9 +135,9 @@ namespace ZenohDotNet.Native
                     _handle = null;
                 }
 
-                if (_callbackHandle.IsAllocated)
+                if (_selfHandle.IsAllocated)
                 {
-                    _callbackHandle.Free();
+                    _selfHandle.Free();
                 }
 
                 _disposed = true;

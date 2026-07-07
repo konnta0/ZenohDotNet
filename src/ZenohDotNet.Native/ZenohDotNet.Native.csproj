@@ -118,6 +118,10 @@
           DestinationFolder="$(UnityPackagePath)/Plugins/Linux/x86_64" 
           SkipUnchangedFiles="true"
           Condition="Exists('$(NativeBuildPath)/libzenoh_ffi.so')" />
+
+    <!-- Bundle managed layer as C# source so Unity applies platform-specific DllImport names -->
+    <Exec Command="bash &quot;$(MSBuildProjectDirectory)/../../scripts/bundle-upm-native-source.sh&quot; &quot;$(UnityPackagePath)&quot;"
+          Condition="Exists('$(UnityPackagePath)')" />
     
     <Message Importance="high" Text="Synced native libraries to Unity package (if available)" />
   </Target>

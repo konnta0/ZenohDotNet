@@ -259,12 +259,9 @@ UNITY_PKG="$1"
 NATIVE_LIBS="$2"
 ARTIFACT_PREFIX="${3:-unity-native}"
 
-MANAGED_DLL="${4:-}"
-
 if [ -z "$UNITY_PKG" ] || [ -z "$NATIVE_LIBS" ]; then
-    echo "Usage: $0 <unity_pkg_path> <native_libs_path> [artifact_prefix] [managed_dll]"
+    echo "Usage: $0 <unity_pkg_path> <native_libs_path> [artifact_prefix]"
     echo "  artifact_prefix defaults to 'unity-native'"
-    echo "  managed_dll: optional path to prebuilt ZenohDotNet.Native.dll to include as managed plugin"
     exit 1
 fi
 
@@ -351,11 +348,3 @@ find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"
 
 echo "=== Meta file content sample (macOS) ==="
 cat "$UNITY_PKG/Plugins/macOS/zenoh_ffi.dylib.meta" 2>/dev/null || echo "No macOS meta"
-
-# Copy managed DLL if provided
-if [ -n "$MANAGED_DLL" ] && [ -f "$MANAGED_DLL" ]; then
-    cp "$MANAGED_DLL" "$UNITY_PKG/Runtime/"
-    generate_plugin_meta_managed "$UNITY_PKG/Runtime/$(basename "$MANAGED_DLL")"
-    echo "=== Managed DLL copied ==="
-    echo "  $(basename "$MANAGED_DLL") -> $UNITY_PKG/Runtime/"
-fi

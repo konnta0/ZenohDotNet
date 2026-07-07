@@ -8,14 +8,19 @@ namespace ZenohDotNet.Native
     /// <summary>
     /// Represents a Zenoh queryable that responds to get queries.
     /// </summary>
-    public class Queryable : IDisposable
+    public unsafe class Queryable : IDisposable
     {
+        // IL2CPP (iOS and other AOT targets) cannot marshal delegates that point to
+        // instance methods to native code. Use a single static delegate marked with
+        // [MonoPInvokeCallback] and dispatch to the instance through the native
+        // context pointer (a GCHandle to this instance).
+        private static readonly NativeMethods.zenoh_declare_queryable_callback_delegate _staticNativeCallback = OnQueryReceivedStatic;
+
         private unsafe void* _handle;
         private readonly Session _session;
         private readonly string _keyExpr;
         private readonly Action<Query> _callback;
-        private GCHandle _callbackHandle;
-        private NativeMethods.zenoh_declare_queryable_callback_delegate? _nativeCallback;
+        private GCHandle _selfHandle;
         private bool _disposed;
 
         /// <summary>
@@ -31,26 +36,40 @@ namespace ZenohDotNet.Native
 
             var keyBytes = Encoding.UTF8.GetBytes(keyExpr + "\0");
 
-            _nativeCallback = OnQueryReceived;
-            _callbackHandle = GCHandle.Alloc(_nativeCallback);
+            _selfHandle = GCHandle.Alloc(this);
 
             fixed (byte* keyPtr = keyBytes)
             {
                 _handle = NativeMethods.zenoh_declare_queryable(
                     session.Handle,
                     keyPtr,
-                    _nativeCallback,
-                    null);
+                    _staticNativeCallback,
+                    (void*)GCHandle.ToIntPtr(_selfHandle));
             }
 
             if (_handle == null)
             {
-                _callbackHandle.Free();
+                _selfHandle.Free();
                 throw ZenohException.FromLastError("Failed to declare queryable for key expression: {keyExpr}");
             }
         }
 
-        private unsafe void OnQueryReceived(void* queryPtr, void* contextPtr)
+#if UNITY_2018_1_OR_NEWER
+        [AOT.MonoPInvokeCallback(typeof(NativeMethods.zenoh_declare_queryable_callback_delegate))]
+#endif
+        private static unsafe void OnQueryReceivedStatic(void* queryPtr, void* contextPtr)
+        {
+            if (contextPtr == null)
+                return;
+
+            var handle = GCHandle.FromIntPtr((IntPtr)contextPtr);
+            if (handle.Target is Queryable queryable)
+            {
+                queryable.OnQueryReceived(queryPtr);
+            }
+        }
+
+        private unsafe void OnQueryReceived(void* queryPtr)
         {
             try
             {
@@ -93,9 +112,9 @@ namespace ZenohDotNet.Native
                     _handle = null;
                 }
 
-                if (_callbackHandle.IsAllocated)
+                if (_selfHandle.IsAllocated)
                 {
-                    _callbackHandle.Free();
+                    _selfHandle.Free();
                 }
 
                 _disposed = true;

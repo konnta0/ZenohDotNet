@@ -71,8 +71,11 @@ write_prop "$VERSIONS_PROPS" Version "$TARGET_VERSION"
 sed -i.bak -E "s|zenoh = \\{ version = \"=[^\"]+\",|zenoh = { version = \"=${TARGET_ZENOH}\",|" "$CARGO_TOML"
 rm -f "${CARGO_TOML}.bak"
 
-python3 - "$PACKAGE_JSON" "$TARGET_VERSION" <<'PY'
+UPM_VERSION="$("$ROOT/scripts/upm-version.sh" "$TARGET_VERSION")"
+
+python3 - "$PACKAGE_JSON" "$UPM_VERSION" <<'PY'
 import json, sys
+
 path, version = sys.argv[1], sys.argv[2]
 with open(path, encoding="utf-8") as f:
     data = json.load(f)

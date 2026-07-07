@@ -7,8 +7,14 @@ namespace ZenohDotNet.Native
     /// <summary>
     /// Represents a Zenoh querier for repeated queries on the same key expression.
     /// </summary>
-    public class Querier : IDisposable
+    public unsafe class Querier : IDisposable
     {
+        // IL2CPP (iOS and other AOT targets) cannot marshal capturing lambdas or
+        // instance methods to native code. Use a static delegate marked with
+        // [MonoPInvokeCallback] and pass the user callback through the native
+        // context pointer (a GCHandle to Action<Sample>).
+        private static readonly NativeMethods.zenoh_querier_get_callback_delegate _staticNativeCallback = OnGetReplyStatic;
+
         private unsafe void* _handle;
         private bool _disposed;
         private readonly string _keyExpr;
@@ -44,43 +50,71 @@ namespace ZenohDotNet.Native
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            NativeMethods.zenoh_querier_get_callback_delegate nativeCallback = (samplePtr, ctx) =>
+            var callbackHandle = GCHandle.Alloc(callback);
+            try
             {
-                if (samplePtr == null)
-                    return;
+                var result = NativeMethods.zenoh_querier_get(
+                    _handle,
+                    _staticNativeCallback,
+                    (void*)GCHandle.ToIntPtr(callbackHandle));
 
-                string keyExpr = Marshal.PtrToStringUTF8((IntPtr)samplePtr->key_expr) ?? string.Empty;
-
-                int payloadLength = (int)samplePtr->payload_len;
-                byte[] payload = new byte[payloadLength];
-                if (payloadLength > 0)
+                if (result != ZenohError.Ok)
                 {
-                    Marshal.Copy((IntPtr)samplePtr->payload_data, payload, 0, payloadLength);
+                    throw ZenohException.FromLastError("Querier get failed with error: {result}");
                 }
-
-                var kind = (SampleKind)samplePtr->kind;
-                var encoding = (PayloadEncoding)samplePtr->encoding_id;
-
-                Timestamp? timestamp = null;
-                if (samplePtr->timestamp_valid)
-                {
-                    byte[] id = new byte[16];
-                    for (int i = 0; i < 16; i++)
-                        id[i] = samplePtr->timestamp.id[i];
-                    timestamp = new Timestamp(samplePtr->timestamp.time_ntp64, id);
-                }
-
-                var sample = new Sample(keyExpr, payload, kind, encoding, timestamp);
-                callback(sample);
-            };
-
-            var result = NativeMethods.zenoh_querier_get(_handle, nativeCallback, null);
-            GC.KeepAlive(nativeCallback);
-
-            if (result != ZenohError.Ok)
-            {
-                throw ZenohException.FromLastError("Querier get failed with error: {result}");
             }
+            finally
+            {
+                callbackHandle.Free();
+            }
+        }
+
+#if UNITY_2018_1_OR_NEWER
+        [AOT.MonoPInvokeCallback(typeof(NativeMethods.zenoh_querier_get_callback_delegate))]
+#endif
+        private static unsafe void OnGetReplyStatic(SampleData* samplePtr, void* contextPtr)
+        {
+            if (contextPtr == null || samplePtr == null)
+                return;
+
+            var handle = GCHandle.FromIntPtr((IntPtr)contextPtr);
+            if (handle.Target is not Action<Sample> callback)
+                return;
+
+            try
+            {
+                callback(ParseSample(samplePtr));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in querier callback: {ex}");
+            }
+        }
+
+        private static unsafe Sample ParseSample(SampleData* samplePtr)
+        {
+            string keyExpr = Marshal.PtrToStringUTF8((IntPtr)samplePtr->key_expr) ?? string.Empty;
+
+            int payloadLength = (int)samplePtr->payload_len;
+            byte[] payload = new byte[payloadLength];
+            if (payloadLength > 0)
+            {
+                Marshal.Copy((IntPtr)samplePtr->payload_data, payload, 0, payloadLength);
+            }
+
+            var kind = (SampleKind)samplePtr->kind;
+            var encoding = (PayloadEncoding)samplePtr->encoding_id;
+
+            Timestamp? timestamp = null;
+            if (samplePtr->timestamp_valid)
+            {
+                byte[] id = new byte[16];
+                for (int i = 0; i < 16; i++)
+                    id[i] = samplePtr->timestamp.id[i];
+                timestamp = new Timestamp(samplePtr->timestamp.time_ntp64, id);
+            }
+
+            return new Sample(keyExpr, payload, kind, encoding, timestamp);
         }
 
         private void ThrowIfDisposed()

@@ -9,8 +9,14 @@ namespace ZenohDotNet.Native
     /// <summary>
     /// Represents a Zenoh session. This is the entry point for all Zenoh operations.
     /// </summary>
-    public class Session : IDisposable
+    public unsafe class Session : IDisposable
     {
+        // IL2CPP (iOS and other AOT targets) cannot marshal capturing lambdas or
+        // instance methods to native code. Use a static delegate marked with
+        // [MonoPInvokeCallback] and pass the user callback through the native
+        // context pointer (a GCHandle to Action<Sample>).
+        private static readonly NativeMethods.zenoh_get_callback_delegate _staticGetCallback = OnGetReplyStatic;
+
         private unsafe void* _handle;
         private bool _disposed;
 
@@ -368,53 +374,17 @@ namespace ZenohDotNet.Native
             ThrowIfDisposed();
 
             var selectorBytes = Encoding.UTF8.GetBytes(selector + "\0");
-
-            // Keep delegate alive
-            NativeMethods.zenoh_get_callback_delegate nativeCallback = (samplePtr, contextPtr) =>
-            {
-                if (samplePtr == null)
-                    return;
-
-                try
-                {
-                    string keyExpr = Marshal.PtrToStringUTF8((IntPtr)samplePtr->key_expr) ?? string.Empty;
-
-                    int payloadLength = (int)samplePtr->payload_len;
-                    byte[] payload = new byte[payloadLength];
-                    if (payloadLength > 0)
-                    {
-                        Marshal.Copy((IntPtr)samplePtr->payload_data, payload, 0, payloadLength);
-                    }
-
-                    var kind = (SampleKind)samplePtr->kind;
-                    var encoding = (PayloadEncoding)samplePtr->encoding_id;
-
-                    Timestamp? timestamp = null;
-                    if (samplePtr->timestamp_valid)
-                    {
-                        byte[] id = new byte[16];
-                        for (int i = 0; i < 16; i++)
-                            id[i] = samplePtr->timestamp.id[i];
-                        timestamp = new Timestamp(samplePtr->timestamp.time_ntp64, id);
-                    }
-
-                    var sample = new Sample(keyExpr, payload, kind, encoding, timestamp);
-                    callback?.Invoke(sample);
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"Exception in get callback: {ex}");
-                }
-            };
-
-            // Pin the delegate to prevent GC
-            var callbackHandle = GCHandle.Alloc(nativeCallback);
+            var callbackHandle = GCHandle.Alloc(callback);
 
             try
             {
                 fixed (byte* selectorPtr = selectorBytes)
                 {
-                    var result = NativeMethods.zenoh_get(_handle, selectorPtr, nativeCallback, null);
+                    var result = NativeMethods.zenoh_get(
+                        _handle,
+                        selectorPtr,
+                        _staticGetCallback,
+                        (void*)GCHandle.ToIntPtr(callbackHandle));
 
                     if (result != ZenohError.Ok)
                     {
@@ -426,6 +396,54 @@ namespace ZenohDotNet.Native
             {
                 callbackHandle.Free();
             }
+        }
+
+#if UNITY_2018_1_OR_NEWER
+        [AOT.MonoPInvokeCallback(typeof(NativeMethods.zenoh_get_callback_delegate))]
+#endif
+        private static unsafe void OnGetReplyStatic(SampleData* samplePtr, void* contextPtr)
+        {
+            if (contextPtr == null || samplePtr == null)
+                return;
+
+            var handle = GCHandle.FromIntPtr((IntPtr)contextPtr);
+            if (handle.Target is not Action<Sample> callback)
+                return;
+
+            try
+            {
+                callback(ParseGetSample(samplePtr));
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in get callback: {ex}");
+            }
+        }
+
+        private static unsafe Sample ParseGetSample(SampleData* samplePtr)
+        {
+            string keyExpr = Marshal.PtrToStringUTF8((IntPtr)samplePtr->key_expr) ?? string.Empty;
+
+            int payloadLength = (int)samplePtr->payload_len;
+            byte[] payload = new byte[payloadLength];
+            if (payloadLength > 0)
+            {
+                Marshal.Copy((IntPtr)samplePtr->payload_data, payload, 0, payloadLength);
+            }
+
+            var kind = (SampleKind)samplePtr->kind;
+            var encoding = (PayloadEncoding)samplePtr->encoding_id;
+
+            Timestamp? timestamp = null;
+            if (samplePtr->timestamp_valid)
+            {
+                byte[] id = new byte[16];
+                for (int i = 0; i < 16; i++)
+                    id[i] = samplePtr->timestamp.id[i];
+                timestamp = new Timestamp(samplePtr->timestamp.time_ntp64, id);
+            }
+
+            return new Sample(keyExpr, payload, kind, encoding, timestamp);
         }
 
         private void ThrowIfDisposed()

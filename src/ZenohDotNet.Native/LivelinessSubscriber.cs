@@ -9,14 +9,19 @@ namespace ZenohDotNet.Native
     /// Represents a Zenoh liveliness subscriber.
     /// Receives notifications when liveliness tokens are created or dropped.
     /// </summary>
-    public class LivelinessSubscriber : IDisposable
+    public unsafe class LivelinessSubscriber : IDisposable
     {
+        // IL2CPP (iOS and other AOT targets) cannot marshal delegates that point to
+        // instance methods to native code. Use a single static delegate marked with
+        // [MonoPInvokeCallback] and dispatch to the instance through the native
+        // context pointer (a GCHandle to this instance).
+        private static readonly NativeMethods.zenoh_liveliness_declare_subscriber_callback_delegate _staticNativeCallback = OnLivelinessChangeStatic;
+
         private unsafe void* _handle;
         private readonly Session _session;
         private readonly string _keyExpr;
         private readonly Action<string, bool> _callback;
-        private GCHandle _callbackHandle;
-        private NativeMethods.zenoh_liveliness_declare_subscriber_callback_delegate _nativeCallback;
+        private GCHandle _selfHandle;
         private bool _disposed;
 
         /// <summary>
@@ -30,23 +35,41 @@ namespace ZenohDotNet.Native
             _keyExpr = keyExpr ?? throw new ArgumentNullException(nameof(keyExpr));
             _callback = callback ?? throw new ArgumentNullException(nameof(callback));
 
-            _nativeCallback = OnLivelinessChange;
-            _callbackHandle = GCHandle.Alloc(_nativeCallback);
+            _selfHandle = GCHandle.Alloc(this);
 
             var keyBytes = Encoding.UTF8.GetBytes(keyExpr + "\0");
             fixed (byte* keyPtr = keyBytes)
             {
-                _handle = NativeMethods.zenoh_liveliness_declare_subscriber(session.Handle, keyPtr, _nativeCallback, null);
+                _handle = NativeMethods.zenoh_liveliness_declare_subscriber(
+                    session.Handle,
+                    keyPtr,
+                    _staticNativeCallback,
+                    (void*)GCHandle.ToIntPtr(_selfHandle));
             }
 
             if (_handle == null)
             {
-                _callbackHandle.Free();
+                _selfHandle.Free();
                 throw ZenohException.FromLastError("Failed to declare liveliness subscriber for key expression: {keyExpr}");
             }
         }
 
-        private unsafe void OnLivelinessChange(byte* keyExprPtr, bool isAlive, void* context)
+#if UNITY_2018_1_OR_NEWER
+        [AOT.MonoPInvokeCallback(typeof(NativeMethods.zenoh_liveliness_declare_subscriber_callback_delegate))]
+#endif
+        private static unsafe void OnLivelinessChangeStatic(byte* keyExprPtr, bool isAlive, void* contextPtr)
+        {
+            if (contextPtr == null)
+                return;
+
+            var handle = GCHandle.FromIntPtr((IntPtr)contextPtr);
+            if (handle.Target is LivelinessSubscriber subscriber)
+            {
+                subscriber.OnLivelinessChange(keyExprPtr, isAlive);
+            }
+        }
+
+        private unsafe void OnLivelinessChange(byte* keyExprPtr, bool isAlive)
         {
             if (keyExprPtr == null)
                 return;
@@ -89,9 +112,9 @@ namespace ZenohDotNet.Native
                     _handle = null;
                 }
 
-                if (_callbackHandle.IsAllocated)
+                if (_selfHandle.IsAllocated)
                 {
-                    _callbackHandle.Free();
+                    _selfHandle.Free();
                 }
 
                 _disposed = true;

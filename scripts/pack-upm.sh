@@ -25,6 +25,9 @@ cp "$UPM_SRC/package.json" "$UPM_DIR/"
 # Copy Runtime files
 cp -R "$UPM_SRC/Runtime" "$UPM_DIR/"
 
+chmod +x "$SCRIPT_DIR/bundle-upm-native-source.sh"
+"$SCRIPT_DIR/bundle-upm-native-source.sh" "$UPM_DIR"
+
 # Copy Editor files
 cp -R "$UPM_SRC/Editor" "$UPM_DIR/"
 
