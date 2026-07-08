@@ -1,6 +1,6 @@
 {
   "name": "com.zenohdotnet.unity",
-  "version": "1.9.0-native.2",
+  "version": "1.9.0-native.3",
   "displayName": "ZenohDotNet for Unity",
   "license": "MIT",
   "description": "Community-maintained Zenoh .NET bindings for Unity with UniTask support.",
@@ -23,9 +23,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/konnta0/ZenohDotNet.git"
-  },
-  "dependencies": {
-    "com.cysharp.unitask": "2.5.4"
   },
   "samples": [
     {

@@ -34,7 +34,7 @@ ZenohDotNet.Unity provides a Unity-friendly API for Zenoh distributed messaging,
 ## Requirements
 
 - Unity 2021.3 or later
-- UniTask 2.5.4+
+- [UniTask](https://github.com/Cysharp/UniTask) 2.5.4+ (not declared in `package.json`; install separately)
 - ZenohDotNet.Native (automatically included)
 
 ## Usage

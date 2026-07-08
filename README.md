@@ -103,6 +103,10 @@ await Task.Delay(-1);
 
 ### Unity (ZenohDotNet.Unity)
 
+This package depends on [UniTask](https://github.com/Cysharp/UniTask) but does not
+declare it in `package.json` (to support projects that vendor UniTask as source).
+Install UniTask separately before use.
+
 1. Add `com.zenohdotnet.unity` via UPM (Git URL):
    ```
    https://github.com/konnta0/ZenohDotNet.git#upm
@@ -287,7 +291,7 @@ Unity-optimized wrapper with UniTask integration.
 - **Use case**: Unity 2021.2+ projects
 - **API style**: UniTask async + synchronous methods
 - **Features**: Main thread callbacks, Unity lifecycle integration
-- **Dependencies**: com.cysharp.unitask (UPM)
+- **Dependencies**: [UniTask](https://github.com/Cysharp/UniTask) 2.5.4+ (manual install — not declared in UPM `package.json`)
 
 **Installation via Git URL:**
 ```
