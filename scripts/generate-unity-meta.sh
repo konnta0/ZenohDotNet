@@ -342,6 +342,17 @@ if [ -d "$NATIVE_LIBS/${ARTIFACT_PREFIX}-ios-arm64" ]; then
     echo "Copied iOS ARM64 native library"
 fi
 
+# Remove orphaned .meta files (a .meta whose asset does not exist).
+# Stale metas committed for pack-time-injected binaries end up in the immutable
+# UPM package and make every consumer's import log a delete-failure error.
+find "$UNITY_PKG" -name '*.meta' | while read -r meta; do
+    asset="${meta%.meta}"
+    if [ ! -e "$asset" ]; then
+        echo "WARNING: removing orphaned meta without asset: $meta"
+        rm -f "$meta"
+    fi
+done
+
 # List what we have
 echo "=== Native libraries in Unity package ==="
 find "$UNITY_PKG/Plugins" -type f 2>/dev/null || echo "No plugins found"

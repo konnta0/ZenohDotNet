@@ -14,7 +14,7 @@ fn main() {
     csbindgen::Builder::default()
         .input_extern_file("src/lib.rs")
         .csharp_dll_name("zenoh_ffi")
-        .csharp_dll_name_if("UNITY_IOS || UNITY_WEBGL", "__Internal")
+        .csharp_dll_name_if("(UNITY_IOS || UNITY_WEBGL) && !UNITY_EDITOR", "__Internal")
         .csharp_class_name("NativeMethods")
         .csharp_namespace("ZenohDotNet.Native.FFI")
         .csharp_use_function_pointer(false) // Unity compatibility

@@ -96,7 +96,7 @@ done
 if [[ -f "$ROOT/README.md" ]]; then
   sed -i.bak -E "s|badge/version-[^-]+-blue|badge/version-${TARGET_ZENOH}.x-blue|" "$ROOT/README.md"
   sed -i.bak -E "s|zenoh Rust \`[0-9.]+\`|zenoh Rust \`${TARGET_ZENOH}\`|g" "$ROOT/README.md"
-  sed -i.bak -E "s|\| \*\*Package version\*\* \| \`[0-9.]+\.x\`.*|\| **Package version** | \`${TARGET_ZENOH}.x\` = Zenoh \`${TARGET_ZENOH}\` + dotnet release patch (see [Versioning](#versioning)) |" "$ROOT/README.md"
+  sed -i.bak -E 's#\| \*\*Package version\*\* \| `[0-9.]+\.x`.*#| **Package version** | `'"${TARGET_ZENOH}"'.x` = Zenoh `'"${TARGET_ZENOH}"'` + dotnet release patch (see [Versioning](#versioning)) |#' "$ROOT/README.md"
   rm -f "${ROOT}/README.md.bak"
 fi
 
