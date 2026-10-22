@@ -428,7 +428,6 @@ FodyWeavers.xsd
 
 # Rust / Cargo
 native/zenoh-ffi/target/
-native/zenoh-ffi/Cargo.lock
 native/output/
 *.rs.bk
 .cargo/
