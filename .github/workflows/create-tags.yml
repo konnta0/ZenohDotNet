@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   create-tags:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Create Package Tags
     runs-on: ubuntu-latest
     outputs:
@@ -72,6 +73,7 @@ jobs:
           fi
 
   publish-abstractions:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish Abstractions
     needs: create-tags
     uses: ./.github/workflows/publish-abstractions.yml
@@ -81,6 +83,7 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-generator:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish Generator
     needs: [create-tags, publish-abstractions]
     uses: ./.github/workflows/publish-generator.yml
@@ -90,6 +93,7 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-client:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish Client
     needs: create-tags
     uses: ./.github/workflows/publish-client.yml
@@ -99,6 +103,7 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-native:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish Native
     needs: create-tags
     uses: ./.github/workflows/publish-native.yml
@@ -108,6 +113,7 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-unity:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish Unity
     needs: create-tags
     uses: ./.github/workflows/publish-unity.yml

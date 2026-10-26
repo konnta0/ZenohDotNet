@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish
     runs-on: ubuntu-latest
 

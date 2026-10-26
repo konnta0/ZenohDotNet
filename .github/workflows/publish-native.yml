@@ -28,6 +28,7 @@ permissions:
 
 jobs:
   build:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Build ${{ matrix.rid }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -87,6 +88,7 @@ jobs:
           path: native/zenoh-ffi/target/${{ matrix.target }}/release/${{ matrix.lib }}
 
   publish:
+    if: github.repository == 'konnta0/ZenohDotNet'
     name: Publish
     needs: build
     runs-on: ubuntu-latest
