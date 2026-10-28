@@ -1,7 +1,7 @@
 # ZenohDotNet
 
 ![Development Status](https://img.shields.io/badge/status-alpha-red)
-![Version](https://img.shields.io/badge/version-1.9.0.x-blue)
+![Version](https://img.shields.io/badge/version-1.10.2.x-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![.NET](https://img.shields.io/badge/.NET-8.0-purple)
 
@@ -14,8 +14,8 @@ C# bindings for [Eclipse Zenoh](https://zenoh.io) distributed messaging — embe
 | | |
 |--|--|
 | **Maturity** | Alpha — APIs may change; package versions track the embedded Zenoh runtime |
-| **Package version** | `1.9.0.x` = Zenoh `1.9.0` + dotnet release patch (see [Versioning](#versioning)) |
-| **Zenoh runtime** | [zenoh Rust `1.9.0`](https://github.com/eclipse-zenoh/zenoh/releases/tag/1.9.0), statically linked into native binaries |
+| **Package version** | `1.10.2.x` = Zenoh `1.10.2` + dotnet release patch (see [Versioning](#versioning)) |
+| **Zenoh runtime** | [zenoh Rust `1.10.2`](https://github.com/eclipse-zenoh/zenoh/releases/tag/1.10.2), statically linked into native binaries |
 | **Production use** | Evaluate for your workload; no stability guarantees yet |
 
 **Available today:** Session, Publisher, Subscriber, Query/Queryable, Liveliness, Source Generator; .NET 8+ and Unity 2021.3+ on desktop platforms.
@@ -300,7 +300,7 @@ https://github.com/konnta0/ZenohDotNet.git#upm
 
 if you want to use a specific release, append the tag:
 ```
-https://github.com/konnta0/ZenohDotNet.git#upm@v1.9.0.0
+https://github.com/konnta0/ZenohDotNet.git#upm@v1.10.2.0
 ```
 
 [Documentation](docs/unity-integration.md)
@@ -380,7 +380,7 @@ NuGet may normalize `1.9.0.0` to `1.9.0` in the feed; patch releases (`1.9.0.1`,
 
 ### Shipped
 
-Core pub/sub, query, liveliness, Source Generator, cross-platform NuGet/UPM packaging, Unity (UniTask), mobile cross-build support, CI, samples, and benchmarks. Zenoh **1.9.0** runtime with aligned package versioning.
+Core pub/sub, query, liveliness, Source Generator, cross-platform NuGet/UPM packaging, Unity (UniTask), mobile cross-build support, CI, samples, and benchmarks. Zenoh **1.10.2** runtime with aligned package versioning.
 
 ### Planned
 
@@ -395,8 +395,8 @@ ZenohDotNet includes an incremental source generator that provides zero-copy ser
 ### Installation
 
 ```xml
-<PackageReference Include="ZenohDotNet.Abstractions" Version="1.9.0.0" />
-<PackageReference Include="ZenohDotNet.Generator" Version="1.9.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+<PackageReference Include="ZenohDotNet.Abstractions" Version="1.10.2.0" />
+<PackageReference Include="ZenohDotNet.Generator" Version="1.10.2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
 ### Usage

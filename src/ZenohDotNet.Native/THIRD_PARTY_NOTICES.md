@@ -7,7 +7,7 @@ This project bundles or redistributes third-party software.
 The native shared libraries (`zenoh_ffi.dll`, `libzenoh_ffi.dylib`, `libzenoh_ffi.so`, and static archives for mobile targets) shipped in this repository and its NuGet/UPM packages statically link against the Eclipse Zenoh Rust crate.
 
 - Project: https://projects.eclipse.org/projects/iot.zenoh
-- Source: https://github.com/eclipse-zenoh/zenoh (release `1.9.0`)
+- Source: https://github.com/eclipse-zenoh/zenoh (release `1.10.2`)
 - License: **Apache License 2.0** (chosen from the Eclipse Public License 2.0 OR Apache License 2.0 dual license)
 - SPDX-License-Identifier: Apache-2.0
 - Full license text: [licenses/zenoh-APACHE-2.0.txt](licenses/zenoh-APACHE-2.0.txt)
