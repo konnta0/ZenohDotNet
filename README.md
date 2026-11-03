@@ -300,7 +300,7 @@ https://github.com/konnta0/ZenohDotNet.git#upm
 
 if you want to use a specific release, append the tag:
 ```
-https://github.com/konnta0/ZenohDotNet.git#upm@v1.10.2.0
+https://github.com/konnta0/ZenohDotNet.git#upm@v1.10.2.1
 ```
 
 [Documentation](docs/unity-integration.md)
@@ -395,8 +395,8 @@ ZenohDotNet includes an incremental source generator that provides zero-copy ser
 ### Installation
 
 ```xml
-<PackageReference Include="ZenohDotNet.Abstractions" Version="1.10.2.0" />
-<PackageReference Include="ZenohDotNet.Generator" Version="1.10.2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+<PackageReference Include="ZenohDotNet.Abstractions" Version="1.10.2.1" />
+<PackageReference Include="ZenohDotNet.Generator" Version="1.10.2.1" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 ```
 
 ### Usage
