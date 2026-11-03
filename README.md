@@ -367,7 +367,16 @@ NuGet and UPM package versions follow **`{zenoh}.{dotnet-patch}`** (four numeric
 ./scripts/verify-versions.sh
 ```
 
-**Release:** commit the bump, then push one tag — CI publishes all packages with that version:
+**Release:** commit the bump, then push one tag — CI publishes all packages with that version.
+
+NuGet publishing uses [Trusted Publishing](https://www.nuget.org/account/trustedpublishing). No long-lived API key is stored in GitHub. Create one policy per workflow with package owner `konnta`, repository owner `konnta0`, repository `ZenohDotNet`, no environment, and the **Push new packages and package versions** scope:
+
+| Workflow file | Package |
+|---------------|---------|
+| `.github/workflows/publish-abstractions.yml` | `ZenohDotNet.Abstractions` |
+| `.github/workflows/publish-generator.yml` | `ZenohDotNet.Generator` |
+| `.github/workflows/publish-client.yml` | `ZenohDotNet.Client` |
+| `.github/workflows/publish-native.yml` | `ZenohDotNet.Native` |
 
 ```bash
 git tag v1.9.0.0

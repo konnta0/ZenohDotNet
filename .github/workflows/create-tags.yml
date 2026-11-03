@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   create-tags:
@@ -79,8 +80,6 @@ jobs:
     uses: ./.github/workflows/publish-abstractions.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-generator:
     if: github.repository == 'konnta0/ZenohDotNet'
@@ -89,8 +88,6 @@ jobs:
     uses: ./.github/workflows/publish-generator.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-client:
     if: github.repository == 'konnta0/ZenohDotNet'
@@ -99,8 +96,6 @@ jobs:
     uses: ./.github/workflows/publish-client.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-native:
     if: github.repository == 'konnta0/ZenohDotNet'
@@ -109,8 +104,6 @@ jobs:
     uses: ./.github/workflows/publish-native.yml
     with:
       version: ${{ needs.create-tags.outputs.version }}
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   publish-unity:
     if: github.repository == 'konnta0/ZenohDotNet'
